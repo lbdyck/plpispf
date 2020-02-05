@@ -1,0 +1,17 @@
+)attr default(%+_)
+` type(text) intens(high) caps(off) just(asis ) color(yellow)
+~ type(text) intens(high) caps(off) just(asis ) color(turq)
+% type(text) intens(high)
+)Body Window(53,9) Expand(\\)
+%-\-\- ~Product Launch Point Group Table%-\-\-
++
+~Enter/Verify the dataset which contains the Group
+~Product Launch Point table:
++
+~DSN: _grpdsn                                      +
++
++PF3 to continue
+)Init
+)Proc
+ ver (&grpdsn,nb,dsname)
+)End

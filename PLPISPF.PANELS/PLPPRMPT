@@ -1,0 +1,30 @@
+)Attr Default(%+_)
+   ! type( output) intens(high) caps(on ) just(left ) hilite(uscore)
+   @ type( input) intens(low ) caps(off) just(left ) hilite(uscore)
+   # type( output) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(high) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Execution Prompting%-\-\-
+%Command ===>_zcmd
+%
++Application Name         !app     +
++Description              #desc                                             +
++
+`Update the Parameters for the command:$cmd
++
++   Parameters: @cmdopt1                                                     +
++               @cmdopt2                                                      +
++               @cmdopt3                                                      +
++               @cmdopt4                                                      +
++               @cmdopt5                                                      +
++
+`When ready to execute type Run on the command line, otherwise cancel+
+`with PF3.+
+)Init
+  .help = plphp0
+  .cursor = zcmd
+)Proc
+   ver (&zcmd,list,'RUN',blank)
+)End

@@ -1,0 +1,108 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(%+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   % type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Application Help%-\-\-
+%Command ===>_zcmd
+%
++                                                                %Up F10 Dn F11
+#help -------------------------------------------------------------------------#
+)Area Help
++  This panel is where you define or update the ISPF Application to the
++  Product Launch Point table.
++
++  Fields with an * are Required...
++
+`*Application Name+
++
++    Enter the application name that will be used in the table.  It is
++    a 1 to 8 character descriptive name.
++
+` Application ID+
++
++    Enter the ISPF Application ID that will be used when starting the
++    application.  This is a 1-4 character field.
++
+` Description+
++
++    Enter a line of descriptive text to convey to the user what this
++    application is used for.
++
+`**Note:+When entering dataset names you must enter a fully qualified
+`**     +dataset name enclosed in quotes. Multiple dataset names may
+`**     +be specified as long as they fit on the line. Blank or Comma
+`**     +may be used to separate.
++
+` Step Library+
++
++    Enter a dataset name of a load library to be allocated as a dynamic
++    Steplib.
++
+` ISPF Load Library+
++
++    Enter a dataset name of a load library to be allocated using LIBDEF
++    to ISPLLIB.
++
+` ISPF Message Dataset+
++
++    Enter a dataset name of a ISPF Message dataset to be allocated using
++    LIBDEF to ISPMLIB.
++
+` ISPF Panel Dataset+
++
++    Enter a dataset name of a ISPF Panel dataset to be allocated using
++    LIBDEF to ISPPLIB.
++
+` ISPF Skeleton Dataset+
++
++    Enter a dataset name of a ISPF Skeleton dataset to be allocated using
++    LIBDEF to ISPSLIB.
++
+` ISPF Table Dataset+
++
++    Enter a dataset name of a ISPF Table dataset to be allocated using
++    LIBDEF to ISPTLIB.
++
+` Clist Library+
++
++    Enter a dataset name of a CLIST library to be allocated using ALTLIB.
++
+` REXX EXEC Library+
++
++    Enter a dataset name of a REXX library to be allocated using ALTLIB.
++
+`*Application Start (select one)+
+`    Command+
++
++       Enter a ISPF Command, Clist, or REXX EXEC used to start
++       the application.
++
+`    Program+
++
++       Enter a Program used to start the application.
++
+`        Parm+
++        Enter any parm that must be passed to the application program.
++
+`    ISPF Panel+
++
++       Enter a ISPF Panel used to start the application.
++
+`        Panel option+
++        Enter any panel option be passed.
++
+` Additional Datasets:                                                         +
++
++    Specify Yes to be prompted to enter up to 12 additional datasets or
++    No to bypass the prompt.
++
++
+)Init
+  .cursor = zcmd
+)Proc
+)end

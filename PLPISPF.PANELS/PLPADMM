@@ -1,0 +1,22 @@
+)Attr Default(%+_)
+   ! type( input) intens(high) caps(on ) just(left ) hilite(uscore)
+   # type( input) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(high) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Management - New Menu%-\-\-
+%Command ===>_zcmd
+%
++ Enter, Verify, or Change (* = required)
++
++*Menu Name                !app     +A menu name 1-8 characters
++*Description              #desc                                             +
++
++
+)Init
+  .help = plpmhm
+)Proc
+ ver (&app,nb,name)
+ ver (&desc,nb)
+)End

@@ -1,0 +1,2638 @@
+/* --------------------  rexx procedure  -------------------- */
+ ver = "1.48"
+/* Name:      PLPISPF                                         *
+ *                                                            *
+ * Function:  Providing a table driven menu system for        *
+ *            defining and managing ISPF applications.        *
+ *                                                            *
+ * Syntax:    %plpispf /xxx option                            *
+ *                                                            *
+ *            valid options:                                  *
+ *            ADMIN - invokes the administration dialog       *
+ *            other - an application name plus parms          *
+ *                                                            *
+ *            /xxx  - alternate table                         *
+ *            /SYS for systems                                *
+ *            /GRP for individual group tables                *
+ *            /GRPN used to review/update /GRP DsName         *
+ *            /USER for individual user table                 *
+ *               (stored in the users ispf profile)           *
+ *            default is standard table                       *
+ *                                                            *
+ *            Point-and-shoot supported for non-admin list    *
+ *                                                            *
+ * Author:    Lionel B. Dyck                                  *
+ *            Internet: lbdyck@gmail.com                      *
+ *                                                            *
+ * Customization: find the word custom for sections that need *
+ *                to be customized for your installation.     *
+ *                                                            *
+ * History:                                                   *
+ *    v1.48   09/17/2019 - Change version only for panel      *
+ *                         updates                            *
+ *    v1.47   10/16/2018 - Update to command (cmd) parse (bk) *
+ *    v1.46   08/26/2017 - Add cmd_tbl customization to       *
+ *                         control dynamic command table      *
+ *                         for RFIND                          *
+ *    v1.45c  06/21/2017 - Fix/Simplify Symbolic in DSNs      *
+ *    v1.45b  02/15/2017 - Save & Restore PFKey settings for  *
+ *                         ISPF Apps like HCD that blindly    *
+ *                         set them and do not restore them   *
+ *    v1.45a  10/19/2016 - Support APPLID based on SYSCLONE   *
+ *                       - Fix ISPF Full Screen MODE for PGMs *
+ *                       - Restore PFK Show Status on Exiting *
+ *                         an APP like HCD                    *
+ *    v1.45   09/19/2016 - Additional error handling          *
+ *                       - Minor refactoring           TSAZFA *
+ *                       - Support SYSOUT in OTHER DDs TSAZFA *
+ *                       - Add support for ISPF MODE   TSAZFA *
+ *                         TSAZFA - Al Ferguson               *
+ *    v1.44   07/05/2016 - Support symbolics in the command   *
+ *                         field for the each application.    *
+ *    v1.43   06/17/2016 - Enhance Admin Report to add Doc    *
+ *                         if REPORT X is used (X = any char) *
+ *    v1.42   05/06/2016 - Add option from Bruce Koss to allow*
+ *                         limiting apps to lpars/sysplex     *
+ *                         Must customize the sysplex test    *
+ *    v1.41   05/05/2016 - Add option for wild card on        *
+ *                         admin_ids                          *
+ *    v1.40   04/18/2016 - Bug fix for Exclude in Admin       *
+ *    v1.39   04/15/2016 - Additions of Exclude (from Bruce)  *
+ *    v1.38   04/14/2016 - Support Only/Reset in Admin        *
+ *                       - Correct only not found msg         *
+ *    v1.37   04/13/2016 - pre request from Bruce Koss added  *
+ *                         Only and Reset commands            *
+ *                         * does not work with Admin         *
+ *    v1.36   04/06/2016 - add confirmation message for admin *
+ *                         after save and copy                *
+ *    v1.35   04/05/2016 - allow multiple selections at once  *
+ *    v1.34   04/04/2016 - disable test_first routine by      *
+ *                         setting a flag tf_flag             *
+ *    v1.33   04/01/2016 - minor updates from Bruce Koss      *
+ *    v1.32   03/31/2016 - correction for admin for /USER     *
+ *                       - add control errors return          *
+ *    v1.31   03/23/2016 - use symdef var for dsn (LBD)       *
+ *                       - incorporate several changes from   *
+ *                         Bruce Koss                         *
+ *    v1.30   03/16/2016 - minor cleanup       (LBD)          *
+ *                       - fix rfind           (LBD)          *
+ *                       - add P selection     (LBD)          *
+ *    v1.29   03/10/2016 - Make TRX optional   (LBD)          *
+ *    v1.28   10/03/2008 - Updated from Eric Hamtiaux         *
+ *                         1) Correct spelling of Application *
+ *                         2) Correct dsn if syspref<>sysuid  *
+ *                            and sysuid is null              *
+ *                         3) Update Delete dsn for (2)       *
+ *    v1.27   04/30/2004 - Several changes supplied by        *
+ *                         Tim Walker to:                     *
+ *                         1) move the test for group dsn     *
+ *                         2) support WSCMD                   *
+ *                         e.g. CMD: WS c:\my.exe MODELESS    *
+ *                         3) support TRX                     *
+ *    v1.26   10/03/2003 - Correct typo in test               *
+ *    v1.25   06/18/2003 - Correct random start of app        *
+ *                         when not expected (very random)    *
+ *    v1.24   04/16/2003 - Fix sub-menu name of 1 char problem*
+ *    v1.23   03/24/2003 - Correct loop in Find               *
+ *    v1.22   03/21/2003 - Correct Locate after initial Locate*
+ *    v1.21   03/05/2003 - Add support for Dan Dalby's        *
+ *                         dynamic steplib thanks to          *
+ *                         Hartmut Beckmann                   *
+ *    v1.20   02/11/2003 - Fix for near-find table location   *
+ *    v1.19   02/03/2003 - Fix for cmd with parens in parm    *
+ *    v1.18   01/09/2003 - Fix minor problem.                 *
+ *    v1.17   01/07/2003 - Add support for 15 additional dsns *
+ *                       - Redo the Report option (no skel)   *
+ *    v1.16   12/31/2002 - Sort numeric apps before alpha     *
+ *                       - Confiuration option for sort       *
+ *                       - Support on PLP display opt.opt     *
+ *    v1.15   12/19/2002 - Fix for pgm parm with parens       *
+ *    v1.14   12/16/2002 - Fix for app name numeric for       *
+ *                         screen name                        *
+ *    v1.13   10/09/2002 - Close temp table on exit           *
+ *    v1.12   10/08/2002 - Fix tbclose to be tbend in close   *
+ *    v1.11   10/08/2002 - Minor cleanup                      *
+ *    v1.10   10/04/2002 - Change allocation of table to use  *
+ *                         the name of the environment.       *
+ *                       - If the table is opened NoWrite then*
+ *                         copy to temp table and free.       *
+ *                       - Improve near find lookup           *
+ *    v1.9    09/11/2002 - Fix near find from initial cmd     *
+ *    v1.8    08/09/2002 - Correction for GRPN table name     *
+ *                       - support app names numeric          *
+ *                       - minor corrections/cleanup          *
+ *    v1.7    07/29/2002 - Start group sub-menus with W       *
+ *                       - correct bug in sub-menu storage    *
+ *    v1.6    07/25/2002 - Support fixup of symbols for       *
+ *                         multiple dataset names             *
+ *    v1.5    07/24/2002 - Change lookup for RACF Group       *
+ *                       - Enhance lookup for Locate and      *
+ *                         command line app name.             *
+ *    v1.4    07/23/2002 - Allow app name to be entered on    *
+ *                         the command line with or without   *
+ *                         options.                           *
+ *    v1.3    07/22/2002 - Add sub-menu support               *
+ *                         (max of 27 times 999 tables)       *
+ *                       - verify group table DsName is       *
+ *                         fully qualified                    *
+ *    v1.2    07/09/2002 - Change to prevent Alias setup from *
+ *                         clobbering the original            *
+ *            07/08/2002 - Add test if alias points to alias  *
+ *    v1.0    05/21/2001 - Test group table dsn status        *
+ *            12/15/2000 - Fix missing command on alias       *
+ *            09/12/2000 - Fix zerrsm/zerrlm undefined (rare  *
+ *            09/05/2000 - Use RACF Group instead of ids      *
+ *                       - minor doc update                   *
+ *                       - Display error messages from app    *
+ *            08/22/2000 - Fix repeated use of I              *
+ *            08/21/2000 - Add I (info) option                *
+ *            07/06/2000 - Fix if cmd = %plpispf              *
+ *            06/08/2000 - Fix user admin if cmd=%plpispf     *
+ *                         to use panel plpadma               *
+ *                       - Fix Screen Name for Launch         *
+ *            06/06/2000 - Fix Add-to-User if no table prev   *
+ *            06/05/2000 - Redesign Alias handling to allow   *
+ *                         recursion.                         *
+ *                       - Fix /GRP table usage               *
+ *            06/02/2000 - Support Z.aa.bb.cc                 *
+ *            06/01/2000 - Fix Launch from User               *
+ *            05/31/2000 - Fix call to alias in /USER         *
+ *                         test if /USER already open and     *
+ *                         bypass 2nd open (for nesting)      *
+ *            05/16/2000 - Fix Alias to not insert /PLP       *
+ *                         if alias is in the base table      *
+ *            03/30/2000 - Allow Admin open in multiple       *
+ *                         windows (for /user)                *
+ *            03/28/2000 - For ADMIN bypass GRP               *
+ *            03/27/2000 - For ADMIN create admin copy of tbl *
+ *                         except for /USER                   *
+ *            03/24/2000 - if started with command and if     *
+ *                         command not found then display     *
+ *                         table.                             *
+ *                       - cleanup plpexec removing           *
+ *                         extraneous checks and messages     *
+ *            03/21/2000 - add Alias and Repeat options       *
+ *            03/12/2000 - add /GRP and cleanup               *
+ *            03/02/2000 - add tutorials for first usage      *
+ *                       - add /user option and features      *
+ *            02/28/2000 - creation                           *
+ *                                                            *
+ * ---------------------------------------------------------- */
+ TRACE("O")
+ X = MSG("OFF")
+
+ parse arg options
+
+ Signal on NoValue
+
+/* ----------------------------------------------------------------- *
+ | *custom*                                                          |
+ |                                                                   |
+ | cmd_tbl          0 - disable the dynamic ispf command table       |
+ |                  1 - enable the dynamic ispf command table        |
+ |                                                                   |
+ | This should be set to 1 if the USRRFIND is not in either the      |
+ | site or user ispf command tables to enable the use of RFIND.      |
+ * ----------------------------------------------------------------- */
+ cmd_tbl = 1
+
+/* -------------------------------------------------- *
+ * Test for our ISPF Applid and if not then:          *
+ * - create an ISPF Commands Table so we can change   *
+ *   RFIND to PASSTHRU so we can process it           *
+ * - re-invoke ourselves with our APPLID              *
+ * - upon return end the ISPF Commands Table and exit *
+ * -------------------------------------------------- */
+ Address ISPExec
+ "Vget (Zapplid)"
+ "Control Errors Return"
+ if zapplid <> "PLPA" then do
+     if cmd_tbl = 1 then do
+        "TBCreate plpacmds names(zctverb zcttrunc zctact zctdesc)",
+          "replace share nowrite"
+        zctverb = "RFIND"
+        zcttrunc = 0
+        zctact = "&USRRFIND"
+        zctdesc = "RFIND for PLP Dialog"
+        "TBAdd plpacmds"
+        end
+     "SELECT CMD(%"SYSVAR('SYSICMD') options") NEWAPPL(PLPA) PASSLIB"
+     if cmd_tbl = 1 then
+        "TBEnd plpacmds"
+    exit 0
+    end
+
+/* -------------------------- *
+ * Setup Defaults             *
+ * -------------------------- */
+ parse value "" with null parms admin done find_opt ,
+                     last_find open display found tbl,
+                     launch action c_stat zcmd a_crp ,
+                     zsel locate ddadd only_flag
+
+ command = sysvar("sysicmd")
+ plp_cmd = command
+
+/* ------------------------------------------ *
+ * Check for an alternate table specification *
+ * ------------------------------------------ */
+ if left(options,1) = "/" then do
+    parse value options with tbl options
+    command = command tbl
+    end
+
+/* ----------------------------------------------------- *
+ * If options has app.options separate                   *
+ * ----------------------------------------------------- */
+ if words(options) = 1 then
+    if pos(".",options) > 0 then do
+       parse value options with opt1 "." opt2
+       options = opt1 opt2
+       end
+
+/* -------------------------- *
+ * Setup Environment          *
+ * -------------------------- */
+ Address ISPExec
+ "Control Errors Return"
+
+/* -------------------------------------------------------- *
+ * Setup the table name either using the default table name *
+ * or from the user specified alternate table name.         *
+ * -------------------------------------------------------- */
+ if tbl = null then do
+    plptbl = "PLPISPF"
+    tbl = "PLP"
+   end
+ else do
+    PARSE UPPER VALUE tbl WITH "/" tbl .
+    if length(tbl) > 4 then do
+       zedsmsg = ""
+       zedlmsg = "Error: table name of" tbl ,
+                 "exceeds 4 characters. Try again."
+       "SETMSG MSG(ISRZ001)"
+       exit 8
+       end
+    plptbl = tbl"PLP"
+ end
+
+/* -------------------------------------------- *
+ * Get local environment name for data set name *
+ * *custom*                                     *
+ * -------------------------------------------- */
+ node = mvsvar('symdef','plex')
+
+/* ------------------------------------------------------- *
+ * Define the Test_First (TF-Flag) variable which controls *
+ * if the test_first routine runs.                         *
+ *                                                         *
+ * Settings:    0 - run                                    *
+ *              1 - do not run                             *
+ * ------------------------------------------------------- */
+ tf_flag = 1
+
+/* ----------------------------------------------------- *
+ * Setup the plpispf Table dataset name      *custom*    *
+ * plpispf_table = DsName to use                         *
+ * plplib = dataid for libdef                            *
+ * ----------------------------------------------------- */
+  plex = mvsvar('sysplex')
+  plpispf_table = "'c21.plp.table'"
+  plplib        = "PLPISPF"
+
+/* ----------------------------------------------------- *
+ * Table Sort order setup.      *custom*                 *
+ *     tbsort = 0     sort with alpha first numbers last *
+ *     tbsort = 1     sort with numbers first alpha last *
+ * ----------------------------------------------------- */
+ tbsort = 0
+
+/* ----------------------------------------------------- *
+ * Test for Group table                                  *
+ * ----------------------------------------------------- */
+ if tbl = "GRPN" then do
+                      test_grp = 1
+                      tbl = "GRP"
+                      plptbl = tbl"plp"
+                      end
+                 else test_grp = 0
+ if tbl = "GRP" then do
+    plplib = "GRPPLP"
+    "Vget (grpdsn) Profile"
+    if grpdsn = null then call test_group_table
+    else if test_grp = 1 then call test_group_table
+    plpispf_table = grpdsn
+    if pos("ADMIN",options) = 0 then
+    if sysdsn(grpdsn) <> "OK" then do
+       zedsmsg = "Error"
+       zedlmsg = grpdsn sysdsn(grpdsn)
+       "SETMSG MSG(ISRZ001)"
+       call test_group_table
+       end
+     else do
+      if left(grpdsn,1) = "'" then do
+         parse value grpdsn with "'"tdsn"'"
+         tdsn = "'"tdsn"("plptbl")'"
+         end
+      if left(grpdsn,1) <> "'" then do
+         if sysvar('syspref') <> sysvar('sysuid') then
+                 tdsn = "'"sysvar('syspref')"."grpdsn"("plptbl")'"
+            else tdsn = grpdsn"("plptbl")"
+         end
+      if sysdsn(tdsn) <> "OK" then do
+         zedsmsg = "Error"
+         zedlmsg = "The library specified is not valid for the" ,
+          "Group menu function."
+         "SETMSG MSG(ISRZ001)"
+         call test_group_table
+         end
+       end
+    end
+
+/* ----------------------------------------------------- *
+ * Test for User table and setup environment variables   *
+ * ----------------------------------------------------- */
+  if tbl = "USER" then do
+     if options = null then options = "ADMIN"
+     plplib    = "USER"
+     admin     = 1
+     mult_sels = 0
+     ztdsels   = 0
+     rowcrp    = 0
+     src       = 0
+     crp       = 0
+     end
+  else  if sysdsn(plpispf_table) <> "OK" then do
+           zedsmsg = "Error"
+           zedlmsg = plpispf_table sysdsn(plpispf_table)
+           "SETMSG MSG(ISRZ001)"
+           exit 16
+           end
+
+/* ----------------------------------- *
+ * Test for Nest Menu in a Group Table *
+ * ----------------------------------- */
+ temp = substr(tbl,2,3)
+ tid  = left(tbl,1)
+ if datatype(temp) = "NUM" then
+    if pos(TID,"WXYZ") > 0 then do
+       "Vget (grpdsn) Profile"
+       plpispf_table = grpdsn
+       end
+
+/* ----------------------------------------------------- *
+ * Setup number of backup copies of the table to keep    *
+ * when in admin mode and doing updates.    *custom*     *
+ * ----------------------------------------------------- */
+ save_limit = 3
+
+/* ----------------------------------------------------- *
+ * Setup the options passed by the caller                *
+ * ----------------------------------------------------- */
+ PARSE UPPER VALUE options WITH options parms
+
+ app     = options
+
+/* -------------------------------------- *
+ * Process the specified options (if any) *
+ * -------------------------------------- */
+ start = 0
+ stapp = 0
+ Select
+   When options = "ADMIN" then call do_admin
+   When options = null then call display_table
+   Otherwise do
+             start = 1
+             call start_app
+             if admin = 1  then
+                if start = 2 then call do_admin
+             if admin <> 1 then
+                if start = 2 then call display_table
+             end
+   end
+ if open /= 0 then "TBEnd" plptbl
+ Exit 0
+
+/* ----------------------------------------------------- *
+ * Display_Table Routine                                 *
+ *  - call test_first routine                            *
+ *  - call open_table routine                            *
+ *  - call start_app to invoke application               *
+ *  - call browse_info to display information            *
+ *  - call close_table to close the table                *
+ * ----------------------------------------------------- */
+ Display_Table:
+   display = 1
+   call test_first
+   call open_table
+   zsel  = null
+   parse value "1 0 0 0 0" with crp rowcrp last_find src trc
+   if start = 2 then do
+      find_opt = app
+      locate = 0
+      call find_app  /* was do_find */
+      if left(app,length(options)) <> options
+         then crp = crp - 1
+      if crp = 0 then crp = 1
+      if "NUM" <> datatype(options) then do
+         zedsmsg = "Near find"
+         zedlmsg = "Found command closest to" options
+         end
+      else do
+           zedsmsg = "Not Found"
+           zedlmsg = options "not found."
+           save_crp = 0
+           end
+      "SETMSG MSG(ISRZ001)"
+      if save_crp <> null then do
+         crp    = save_crp
+         rowcrp = crp
+         end
+      end
+   do until done = 1
+   stapp = 0
+   parms = null
+   mode = null
+   usrrfind = "PASSTHRU"
+   "VPUT (usrrfind)"
+   if trc = 4 then "TBDispl" plptbl
+   else do
+        "TBTop" plptbl
+        "TBSkip" plptbl "number("crp")"
+        if rowcrp = 0 then "TBDISPL" plptbl "Panel(plplist)"
+        else "TBDispl" plptbl "Panel(plplist)",
+                   "Csrrow("rowcrp") Autosel(no)"
+        end
+
+      trc = rc
+      if trc > 4 then leave
+      crp    = ztdtop
+      rowcrp = null
+      locate = 0
+      launch = 0
+      usrrfind = null
+      "Vput (usrrfind)"
+
+     /* ----------------------------------------------------- *
+      * Support Point-and-Shoot                               *
+      * ----------------------------------------------------- */
+      if row <> null then
+         if row > 0 then do
+              "TBTop " plptbl
+              "TBSkip" plptbl "Number("row")"
+              end
+
+      Select
+        When zcmd = "RFIND" then do
+             call do_find
+             end
+        When abbrev("RESET",zcmd,1) = 1 then do
+             call do_reset
+             end
+        When words(zcmd) > 1 then do
+             PARSE VALUE ZCMD WITH ZCMD find_opt
+             Select
+             when abbrev("FIND",zcmd,1) = 1 then call do_find
+             when abbrev("EXCLUDE",zcmd,1) = 1 |,
+                  (zcmd = "X") then do
+                  only_flag = "X"
+                  call do_only
+                  end
+             when abbrev("ONLY",zcmd,1) = 1 then do
+                  only_flag = 1
+                  call do_only
+                  end
+             when abbrev("LOCATE",zcmd,1) = 1 then do
+                  call do_locate
+                  end
+             when zcmd = "S" then do
+                save_crp = crp
+                parse value find_opt with app parms
+                parms = translate(strip(parms))
+                app   = translate(app)
+                call start_app
+                parms = null
+                crp = save_crp
+                end
+              Otherwise do
+                  save_crp = crp
+                  zcmd = zcmd find_opt
+                  parse value zcmd with app parms
+                  parms = translate(strip(parms))
+                  app   = translate(app)
+                  call start_app
+                  parms = null
+                  crp = save_crp
+                  end
+             end
+             end
+        When words(zcmd) = 0 then
+          Select
+             When row = 0    then nop
+             When zsel = "B" then call browse_info
+             When zsel = "I" then call do_change
+             When zsel = "S" then call start_app
+             When zsel = "L" then do
+                  launch = 1
+                  call test_first
+                  call start_app
+                  end
+             When zsel = "P" then call prompt_app
+             When zsel = "U" then call add_to_user
+             otherwise nop
+             end
+        Otherwise if zcmd <> null then do
+                  save_crp = crp
+                  parse value zcmd with app parms
+                  parms = translate(strip(parms))
+                  app   = translate(app)
+                  call start_app
+                  parms = null
+                  crp = save_crp
+                  end
+        end
+      zsel = null
+      zcmd = null
+   end
+   usrrfind = null
+   "VPUT (usrrfind)"
+   return
+
+/* ----------------------------------------------------- *
+ * Test_First Routine.                                   *
+ *   for first time entry based on ispf profile values   *
+ * ----------------------------------------------------- */
+ Test_First:
+   if tf_flag = 1 then return
+   Select
+     When launch = 1 then do
+          "Vget (plpl1st) Profile"
+          if plpl1st = "OK" then return
+          plpl1st = "OK"
+          "Vput (plpl1st) Profile"
+          "Control Display Save"
+          "Select Pgm(ISPTutor) Parm(plphl)"
+          "Control Display Restore"
+          end
+     When display = 1 then do
+          "Vget (plp1st) Profile"
+          if plp1st = "OK" then return
+          plp1st = "OK"
+          zcmd   = null
+          "Vput (plp1st) Profile"
+          "Control Display Save"
+          "Select Pgm(ISPTutor) Parm(plph0)"
+          "Control Display Restore"
+          end
+     When admin = 1 then do
+          "Vget (plpm1st) Profile"
+          if plpm1st = "OK" then return
+          plpm1st = "OK"
+          zcmd   = null
+          "Vput (plpm1st) Profile"
+          "Control Display Save"
+          "Select Pgm(ISPTutor) Parm(plpmh0)"
+          "Control Display Restore"
+          end
+     Otherwise nop
+     end
+  Return
+
+/* ----------------------------------------------------- *
+ * Start_App Routine                                     *
+ *  - call open_table routine                            *
+ *  - call find_app routine to get start options         *
+ *  - call start_it to invoke application                *
+ *  - call close_table to close the table                *
+ * ----------------------------------------------------- */
+ Start_App:
+   if stapp > 2 then do
+      zedsmsg = "Error"
+      zedlmsg = "The requested application appears to be a" ,
+                "alias pointing to an alias"
+      "SETMSG MSG(ISRZ001)"
+      stapp = 0
+      return
+      end
+   zcmd = null
+   zsel = null
+   tapp = app
+   if open <> 1 then do
+      call open_table
+      end
+   app      = tapp
+   save_app = app
+   call find_app
+   if found = 0 then do
+      app      = save_app
+      find_opt = app
+      call find_app
+      if left(app,length(save_app)) <> save_app then crp = crp - 1
+      if crp = 0 then crp = 1
+      save_crp = crp
+      rowcrp   = crp
+      start    = 2
+      app      = tapp
+      if "NUM" <> datatype(save_app) then do
+         zedsmsg  = "Near find"
+         zedlmsg  = "Found command closest to" save_app
+         end
+      else do
+           zedsmsg  = "Not Found"
+           zedlmsg  = save_app "not found."
+           save_crp = 0
+           rowcrp   = 0
+           end
+      "SETMSG MSG(ISRZ001)"
+      return
+      end
+   if found = 1 then do
+     if left(cmd,2) = "**" then do
+        stapp = stapp + 1
+        a_app = app
+        parse value cmd with "**" app .
+        a_crp    = crp
+        call find_app
+        if found = 0 then return
+        call start_app
+        crp    = a_crp
+        rowcrp = crp
+        return
+        end
+     "Control Display Save"
+      zcmd   = null
+      if launch <> 1 then
+         call start_it
+      else do
+           "Select pgm(ispstrt)",
+           "Parm(TSO %"command app parms")"
+           parms = null
+           end
+     "Control Display Restore"
+      end
+   return
+
+/* ------------------------------------------------------------ *
+ * Prompt_App routine.                                          *
+ *                                                              *
+ * Display panel plpprmpt to allow the user to enter additional *
+ * command options and then to run the command if desired.      *
+ * ------------------------------------------------------------ */
+ Prompt_App:
+     "Control Display Save"
+     action = 0
+     do until action = 1
+        "Display Panel(plpprmpt)"
+        lrc = rc
+        if rc > 0 then leave
+        if zcmd = 'RUN' then do
+           action = 1
+           parms = strip(cmdopt1) strip(cmdopt2) strip(cmdopt3) ,
+                   strip(cmdopt4) strip(cmdopt5)
+           end
+        end
+     if action = 1 then do
+        call start_it
+        action = 0
+        end
+     parms = null
+     "Control Display Restore"
+   return
+
+/* ----------------------------------------------------- *
+ * Start_It routine - to start the desired application   *
+ * ----------------------------------------------------- */
+ Start_it:
+/* --------------------------------------------------------- *
+ * Test to see if this is a menu and if so then recurse into *
+ * this exec with the menu name.                             *
+ * --------------------------------------------------------- */
+ if cmd = ">Menu" then do
+    if admin = 1 then menu_admin = "ADMIN"
+                 else menu_admin = null
+    "Vget (zapplid)"
+    if length(app) > 1 then scrname = app
+                       else scrname = "Menu"app
+    "SELECT CMD("plp_cmd" /"applid menu_admin parms")" ,
+           "PASSLIB NEWPOOL SCRNAME("scrname") NEWAPPL("ZAPPLID")"
+    parms = null
+    call open_table
+    src = 0
+    return
+    end
+
+/*--------------------------------------------------------------*/
+/* Added below lines of code to check the description to see    */
+/* it contained the text 'ONLY' and if so, obtain the lpar      */
+/* and/or sysplex name.  Then validate the software is being    */
+/* invoked on the correct lpar/sysplex, if not display pop-up   */
+/* panel informing user the software is not licensed/installed  */
+/*--------------------------------------------------------------*/
+ if (desc <> "") then do
+    TSTDESC = Translate(desc)
+    parse value tstdesc with "ONLY" chkonly
+    if strip(chkonly) /= '' then do
+        /* translate out commas and dash*/
+        chkonly = translate(chkonly,' ',',-')
+       /* change tstplex for each site *custom* */
+       /* tstplex = Substr(MVSVAR('sysplex'),1,3) */
+       tstplex = MVSVAR('sysplex')
+       tstlpar = MVSVAR('sysname')
+       chklpar = wordpos(tstlpar,chkonly)
+       chkplex = wordpos(tstplex,chkonly)
+       if (chklpar = 0) & (chkplex = 0) then do
+          "Addpop column(40)"
+          chkonly = pos("ONLY",tstdesc)
+          msg1 = app" - "substr(desc,chkonly)
+          "Display panel(plpnogo)"
+          "rempop"
+          return
+       end
+    end
+ end
+
+/* -------------------------- *
+ * Parse out the DD additions *
+ * -------------------------- */
+ parse value ddadd with dd1"/"dsn1"/"dd2"/"dsn2"/" ,
+                        dd3"/"dsn3"/"dd4"/"dsn4"/" ,
+                        dd5"/"dsn5"/"dd6"/"dsn6"/" ,
+                        dd7"/"dsn7"/"dd8"/"dsn8"/" ,
+                        dd9"/"dsn9"/"dd10"/"dsn10"/" ,
+                        dd11"/"dsn11"/"dd12"/"dsn12"/",
+                        dd13"/"dsn13"/"dd14"/"dsn14"/",
+                        dd15"/"dsn15
+
+/* ----------------------------------------------------- *
+ * First fixup all DsNames (resolve system symbols)      */
+ call fix_up_DsNames
+/* ---------------------------- *
+ * Fixup cmd if symbolics in it *
+ * ---------------------------- */
+ if pos('&',cmd) > 0 then cmd = fix_symdef(cmd)
+/* ----------------------------------------------------- *
+ * Build the command parameters for PLPEXEC              */
+ SELECT
+   WHEN applid = "APP+" THEN DO
+      applid = STRIP(LEFT(app||MVSVAR("SYSCLONE"),4))
+      keys = "APPLID("applid")"
+     END
+   WHEN applid <> null  THEN keys = "APPLID("applid")"
+ OTHERWISE
+    keys = null
+ END
+ if clist   <> null then keys = keys "CLIST("clist")"
+ if rexx    <> null then keys = keys "EXEC("rexx")"
+ if llib    <> null then keys = keys "LLIB("llib")"
+ if step    <> null then keys = keys "STEP("step")"
+ if msg     <> null then keys = keys "MSGS("msg")"
+ if skel    <> null then keys = keys "SKELS("skel")"
+ if panel   <> null then keys = keys "PANELS("panel")"
+ if table   <> null then keys = keys "TABLE("table")"
+ SELECT
+   When cmd <> null then do
+        IF POS("APP+",cmd) > 0 THEN DO
+           PARSE VALUE cmd WITH before "APP+" after
+           cmd = before || applid || after
+        END
+        tcmd = translate(cmd,x2c(0102),"()")
+        IF (WORD(tcmd,1) = "EXEC") & (parms <> null) THEN
+                keys = keys "CMD("tcmd "'"parms"')"
+           ELSE keys = keys "CMD("tcmd parms")"
+        IF mode <> null THEN SELECT
+            WHEN mode = "F" THEN keys = keys "MODE(FSCR)"
+            WHEN mode = "L" THEN keys = keys "MODE(LINE)"
+        OTHERWISE; NOP; END
+        parms = null
+     END
+   When ipanel <> null then do
+        keys = keys "PANEL("ipanel")"
+        IF iopt <> null THEN DO
+           keys = keys "OPT("iopt")"
+          END
+        ELSE DO
+           IF parms <> null THEN DO
+              keys = keys "OPT("parms")"
+              parms = null
+           END
+        END
+     END
+   When pgm <> null then do
+        keys = keys "PGM("pgm")"
+        IF POS("APP+",parm) > 0 THEN DO
+           PARSE VALUE parm WITH before "APP+" after
+           parm = before || applid || after
+        END
+        IF parm <> null THEN DO
+           tparm = translate(parm,x2c(0102),"()")
+           keys = keys "PARM("tparm""parms")"
+           parms = null
+          END
+        ELSE DO
+           IF parms <> null THEN DO
+              keys = keys "PARM("parms")"
+              parms = null
+           END
+        END
+        IF mode <> null THEN SELECT
+            WHEN mode = "F" THEN keys = keys "MODE(FSCR)"
+            WHEN mode = "L" THEN keys = keys "MODE(LINE)"
+        OTHERWISE; NOP; END
+     END
+ OTHERWISE; NOP; END
+ Address TSO
+ if length(dd1) > 0t then call alloc_ddadd
+ call plpexec keys
+ if length(dd1) > 0 then call free_ddadd
+ Address ISPExec
+ call open_table
+ src = 0
+ return
+
+/* ----------------------------------------------------- *
+ *  setup libdef for table                               *
+ * ----------------------------------------------------- */
+ do_libdef:
+ if tbl = "USER" then do
+   "Libdef" plplib "library id(ISPPROF) STACK"
+   end
+ else do
+      "Libdef" plplib "dataset id("plpispf_table") STACK"
+      end
+ return
+
+/* ----------------------------------------------------- *
+ * Close the Table                                       *
+ * ----------------------------------------------------- */
+ Close_Table:
+   if open <> 1 then return
+   "TBEnd" plptbl
+   "Libdef" plplib
+   open = 0
+   return
+
+/* ----------------------------------------------------- *
+ * Open the Table                                        *
+ * - table must be in the ISPTLIB concatenation          *
+ * ----------------------------------------------------- */
+ Open_Table:
+ if open = 1 then return
+ call do_libdef
+ if admin <> 1 then do
+       if tbl = "USER" then do
+          "TBOpen" plptbl "write library("plplib") share"
+           s_rc = rc
+           end
+       else do
+          "TBOpen" plptbl "nowrite library("plplib") share"
+           s_rc = rc
+           end
+    end
+ else do
+    "TBOpen" plptbl "write library("plplib") share"
+    s_rc = rc
+    end
+ open = 1
+ temp_flag = 0
+ if admin <> 1 then
+    if tbl <> "USER" then do
+       if s_rc = 0 then call copy_table
+       end
+ if s_rc = 0 then do
+    if admin = 1 then
+       call Fixup_table
+    if s_rc = 0 then
+       "TBSort" plptbl "fields(wapp c,a)"
+    end
+ /* Comment Start  $$$$
+ return
+    Comment End */
+ if admin = 1 then return
+ else do
+      zedsmsg = "Error"
+      select
+        When s_rc = 0 then return
+        When s_rc = 8 then
+             zedlmsg = "Table does not exist." ,
+                       "Notify Systems Programming."
+        When s_rc = 12 then
+             zedlmsg = "Table is current ENQ's by another user." ,
+                       "Notify Systems Programming."
+        When s_rc = 16 then
+             zedlmsg = "Table input library was not allocated." ,
+                       "Notify Systems Programming."
+        When s_rc = 20 then
+             zedlmsg = "Severe table error." ,
+                       "Notify Systems Programming."
+        otherwise nop
+        end
+      "SETMSG MSG(ISRZ001)"
+      exit s_rc
+      end
+ Return
+
+/* --------------------------------------------------------- *
+ * Copy_Table routine.                                       *
+ * This routine is called to copy the active table when the  *
+ * table is opened for nowrite into a temporary table so     *
+ * that the active table can be closed. This resolves issues *
+ * with PDSE sharing.                                        *
+ * --------------------------------------------------------- */
+ Copy_Table:
+ "TBQuery" plptbl "Keys(tmpkeys) Names(tmpnames) Rownum(tmprows)"
+ parse value tmpkeys with "("tmpkeys")"
+ parse value tmpnames with "("tmpnames")"
+ if pos("DDADD",tmpnames) = 0 then do
+    tmpnames = tmpnames "DDADD"
+    tmpddset = 1
+    end
+ else tmpddset = 0
+ if pos("WAPP",tmpkeys) = 0 then do
+    tmpkeys = tmpkeys "wapp"
+    tmpset = 1
+    end
+ else tmpset = 0
+ temp = "PLPT"random(9999)
+ "TBCreate" temp "Keys("tmpkeys") Names("tmpnames")"
+ "TBTop" plptbl
+ do icnt = 1 to tmprows
+    "TBSkip" plptbl
+    if tmpset = 1 then
+       if datatype(app) = "NUM" then do
+          wapp = app + 100000000
+          if tbsort = 1 then
+             wapp = ">"right(wapp,8)
+          else
+             wapp = "0"right(wapp,8)
+          end
+       else wapp = app
+    if tmpddset = 1 then
+       ddadd = null
+    "TBAdd" temp "Mult("tmprows")"
+    end
+ orig_tbl = plptbl
+ "TBEnd" orig_tbl
+ plptbl   = temp
+ "TBTop" plptbl
+ temp_flag = 1
+ app       = null
+ return
+
+/* --------------------------------------------------------- *
+ * Fixup Table. This routine will take an existing table and *
+ * add the new keys or row variables as required then return *
+ * after rebuilding the table if necessary.                  *
+ *                                                           *
+ * Add the WAPP variable to the keys list                    *
+ * Add the DDADD variable to the names list                  *
+ * --------------------------------------------------------- */
+ Fixup_Table:
+ "TBQuery" plptbl "Keys(tmpkeys) Names(tmpnames) Rownum(tmprows)"
+ parse value tmpkeys with "("tmpkeys")"
+ parse value tmpnames with "("tmpnames")"
+ if pos("WAPP",tmpkeys)   > 0 & ,
+    pos("DDADD",tmpnames) > 0 & ,
+    pos("MODE",tmpnames)  > 0 then return
+ if pos("WAPP",tmpkeys) = 0
+    then tmpkeys  = tmpkeys "wapp"
+ if pos("DDADD",tmpnames) = 0
+    then tmpnames = tmpnames "DDADD"
+ if pos("MODE",tmpnames) = 0  then tmpnames = tmpnames "MODE"
+ ddadd = null; mode = null
+ plptbln = "PLPT"random(9999)
+ "TBCreate" plptbln "Keys("tmpkeys") Names("tmpnames")"
+ "TBTop" plptbl
+ do forever
+    "TBSkip" plptbl
+    if rc > 0 then leave
+    if datatype(app) = "NUM" then do
+       wapp = app + 100000000
+       if tbsort = 1 then
+          wapp = ">"right(wapp,8)
+       else
+          wapp = "0"right(wapp,8)
+       end
+    else wapp = app
+    "TBAdd" plptbln
+    end
+ "TBEnd" plptbl
+ "TBSave" plptbln "Replcopy name("plptbl")" ,
+      "Library("plplib")"
+ "TBEnd" plptbln
+ "TBOpen" plptbl "write library("plplib") share"
+ return
+
+/* ----------------------------------------------------- *
+ * Add_To_User routine to add the existing command to    *
+ * the user application table.                           *
+ * ----------------------------------------------------- */
+ Add_To_User:
+    save_lib = plplib
+    save_tbl = plptbl
+    tbl      = "USER"
+    zsel     = null
+    plplib   = "USER"
+    plptbl = "USERPLP"
+    "Libdef" plplib "library id(ISPPROF)"
+    admin = 1
+    "TBStats" plptbl "library("plplib") Status1(stat1)"
+    if stat1 = 2 then do
+      "TBCreate" plptbl "write library("plplib")" ,
+         "Keys(app wapp)" ,
+         "Names(applid msg panel skel table cmd" ,
+               "llib step clist rexx" ,
+               "pgm parm mode ipanel iopt desc ddadd)"
+      "TBSort" plptbl "fields(wapp c,a)"
+       end
+    call open_table
+    admin = 0
+    parse value "" with llib step msg panel skel table clist ,
+                        rexx cmd pgm parm mode ipanel iopt applid
+    cmd = "%"sysvar('sysicmd')
+    if orig_tbl = "PLP"
+       then cmd = cmd app
+       else cmd = cmd "/"orig_tbl app
+    call do_change
+    "TBSave" plptbl "library("plplib") Replcopy"
+    call close_table
+    action   = null
+    plplib   = save_lib
+    plptbl   = save_tbl
+    tbl      = save_tbl
+    if c_stat = 0 then return
+    zedsmsg  = "Added"
+    zedlmsg  = "Application" app "has been added to the",
+               "User Application list."
+    "SETMSG MSG(ISRZ001)"
+    return
+
+/* ----------------------------------------------------- *
+ * Find_App routine - find the requested application     *
+ * ----------------------------------------------------- */
+ Find_App:
+  tapp = app
+  "TBTop" plptbl
+  hit   = 0
+  found = 0
+  crp   = 0
+  do until hit = 1
+     "TBSkip" plptbl
+     f_rc = rc
+     if f_rc > 7 then do
+        zedmsg  = "Error"
+        zedlmsg = "Requested command" tapp "not found" ,
+                  "in the command table."
+        "SETMSG MSG(ISRZ001)"
+        hit = 1
+        end
+     crp = crp + 1
+     if tapp = app then do
+        hit = 1
+        found = 1
+        return
+        end
+     if datatype(tapp) <> "NUM" then
+        if datatype(app) <> "NUM" then
+           if tapp < app then return
+     end
+ return
+
+/* ----------------------------------------------------- *
+ * Do_Admin Routine                                      *
+ * ----------------------------------------------------- */
+ Do_Admin:
+ status = 0
+ /*------ commented as this applies only for RACF
+ if pos(tbl,"USER GRP") = 0 then do
+/* ----------------------------------------------------- *
+ * Check RACF Default Group for authorization to Admin   *
+ * *custom* change racf_groups for valid admin groups    *
+ * ----------------------------------------------------- */
+    racf_groups = "SDSMVS SYSSCP01"
+    call outtrap "racf."
+    Address TSO "LU" sysvar('sysuid')
+    call outtrap "off"
+    do i = 2 to racf.0
+      if pos("GROUP=",racf.i) > 0 then do
+        parse value racf.i with x "GROUP="group .
+        if wordpos(group,racf_groups) <> 0 then do
+          status = 1
+          leave
+          end
+        end
+      end
+   ------ End of RACF section ----------- */
+
+/* ------------------------------------ *
+ * Test for Admin Authority    *custom* *
+ * ------------------------------------ */
+ admin_ids = 'S*'
+ if pos(sysvar('sysuid'),admin_ids) > 0 then status = 1
+ if pos('*',admin_ids) > 0 then do forever
+    parse value admin_ids with tid'*' admin_ids
+    if words(tid) > 1 then do
+       tid = word(tid,words(tid))
+       end
+    tid = strip(tid)
+    if length(tid) = 0 then leave
+    if left(sysvar('sysuid'),length(tid)) = tid then status = 1
+    if status = 1 then leave
+    end
+ if admin = 1 then status = 1
+
+ /* Verify the user is ISPF Admin */
+ /* Comment start
+ IF POS(TBL,"USER GRP") = 0 THEN DO
+    _ID = SYSVAR("SYSUID")
+    IF LENGTH(_ID)=6 & ABBREV(_ID,"TS") & RIGHT(_ID,1)="A" THEN status = 1
+       ELSE status = 0
+   END
+ ELSE status = 1
+    Comment End */
+
+ if status = 0
+    then do
+         zedsmsg = ""
+         zedlmsg = "You are not authorized to perform" ,
+                   "the Administration function." ,
+                   "Contact the Systems ISPF" ,
+                   "Administrator."
+         "SETMSG MSG(ISRZ001)"
+         Exit 8
+         end
+
+   admin   = 1
+   call test_first
+   display = 1
+   change  = 0
+   locate  = 0
+   admin_change = 0
+   user_table   = plptbl
+   if tbl <> "USER" then
+      plptbl = tbl"ADM"
+   "TBStats" plptbl "library("plplib") Status1(stat1)"
+   if stat1 = 2 then do
+      "TBStats" user_table "library("plplib") Status1(stat1)"
+      if stat1 = 1 then do
+         "TBOpen" user_table "Library("plplib") share"
+         "TBSave" user_table "name("plptbl")",
+                  "library("plplib") newcopy"
+         "TBEnd" user_table
+         end
+      end
+   call open_table
+   if s_rc = 8 then do
+      "TBCreate" plptbl "write library("plplib")" ,
+         "Keys(app wapp)" ,
+         "Names(applid msg panel skel table cmd" ,
+               "llib step clist rexx" ,
+               "pgm parm mode ipanel iopt desc ddadd)"
+      "TBSort" plptbl "fields(wapp c,a)"
+      call do_insert
+      end
+   if tbl <> "USER" then do
+      mult_sels = 0
+      ztdsels   = 0
+      rowcrp    = 0
+      src       = 0
+      crp       = 0
+      end
+   if tbl <> "USER" then admin_panel = "PLPADM"
+                    else admin_panel = "PLPADMU"
+   do until done = 1
+      usrrfind = "PASSTHRU"
+      "VPut usrrfind"
+      parse value "" with zcmd zsel action add parms
+      if change = 1 then
+         admin_change = 1
+      if mult_sels < 2 then do
+         "TBTop" plptbl
+         "TBSkip" plptbl "Number("crp")"
+         "TBDispl" plptbl "Panel("admin_panel")",
+                 "csrrow("rowcrp") autosel(no)"
+        end
+      else "TBDispl" plptbl
+      t_rc = rc
+      mult_sels = ztdsels
+      crp       = ztdtop
+      usrrfind  = null
+      "VPut usrrfind"
+      if t_rc > 7 then do
+         if admin_change = 0 then do
+            if change = 0 then do
+               open = 0
+               "Tbend" plptbl
+               "Libdef" plplib
+               leave
+               end
+            end
+         else do
+              zedsmsg = null
+              if tbl <> "USER" then do
+              if change = 1 then
+              zedlmsg = "Warning: You have made changes to the",
+                        "table and you have not done a SAVE",
+                        "or a COPY.",
+                        "Either use the COPY or SAVE command or if",
+                        "you don't want to save use the CANCEL" ,
+                        "command."
+              if change = 0 then
+              zedlmsg = "Warning: You have made changes to the",
+                        "table and you have not done a COPY",
+                        "to place your updates into production.",
+                        "Either use the COPY command or if",
+                        "you don't want to update production" ,
+                        "use the CANCEL command."
+                        end
+              else do
+              zedlmsg = "Warning: You have made changes to the",
+                        "table and you have not done a SAVE.",
+                        "Either use the SAVE command or if",
+                        "you don't want to save use the CANCEL" ,
+                        "command."
+                        end
+             "SETMSG MSG(ISRZ001)"
+             end
+         end
+      rowcrp  = null
+
+     /* ----------------------------------------------------- *
+      * Support Point-and-Shoot                               *
+      * ----------------------------------------------------- */
+      if row <> null then
+         if row > 0 then do
+              "TBTop " plptbl
+              "TBSkip" plptbl "Number("row")"
+              end
+      launch = 0
+
+      Select
+        When zcmd = "CANCEL" then do
+             done = 1
+             open = 0
+             "TBEnd" plptbl
+             end
+        When word(zcmd,1) = "REPORT" then do
+             call do_report
+             end
+        When abbrev("RESET",zcmd,1) = 1 then do
+             call do_reset
+             end
+        When zcmd = "SAVE" then do
+             if only_flag /= '' then do
+                zedsmsg = "Error."
+                zedlmsg = "The table has been altered by the use" ,
+                          "of the ONLY command. This prevents the" ,
+                          "use of COPY and Save at this time."
+                "SETMSG MSG(ISRZ001)"
+                end
+             else do
+                "TBSave" plptbl "library("plplib") Replcopy"
+                change = 0
+                if tbl = "USER" then
+                   admin_change = 0
+                zedsmsg = "Saved"
+                zedlmsg = plptbl "saved."
+                'Setmsg msg(isrz001)'
+                end
+             end
+        When zcmd = "COPY" then do
+             if only_flag /= '' then do
+                zedsmsg = "Error."
+                zedlmsg = "The table has been altered by the use" ,
+                          "of the ONLY command. This prevents the" ,
+                          "use of COPY and Save at this time."
+                "SETMSG MSG(ISRZ001)"
+                end
+             else do
+                "TBSave" plptbl "library("plplib") Replcopy"
+                rc1 = rc
+                "TBSave" plptbl "library("plplib") Replcopy",
+                        "name("user_table")"
+                rc2 = rc
+                change       = 0
+                admin_change = 0
+                zedsmsg = "Copied"
+                zedlmsg = plptbl "copied."
+                'Setmsg msg(isrz001)'
+                end
+             end
+        When abbrev("INSERT",zcmd,1) = 1 then do
+             "Control Display Save"
+             call do_insert
+             "Control Display Restore"
+             end
+        When abbrev("MENU",zcmd,1) = 1 then
+             if tbl <> "USER" then do
+                "Control Display Save"
+                call do_insert
+                "Control Display Restore"
+                end
+        When zcmd = "RFIND" then do
+             call do_find
+             end
+        When words(zcmd) > 1 then do
+             parse value zcmd with zcmd find_opt
+             if abbrev("FIND",zcmd,1) = 1 then call do_find
+             if abbrev("LOCATE",zcmd,1) = 1 then call do_locate
+             if abbrev("EXCLUDE",zcmd,1) = 1 |,
+                  (zcmd = "X") then do
+                  only_flag = "X"
+                  call do_only
+                  end
+             if abbrev("ONLY",zcmd,1) = 1 then do
+                only_flag = 1
+                call do_only
+                end
+             if zcmd = "S" then do
+                parse value find_opt with app parms
+                parms = translate(strip(parms))
+                app   = translate(app)
+                call start_app
+                parms = null
+                end
+             end
+        When zcmd <> null then do
+                  save_crp = crp
+                  parse value zcmd with app parms
+                  parms = translate(strip(parms))
+                  app   = translate(app)
+                  if pos(".",app) > 0 then
+                     parse value app with app"."parms
+                  call start_app
+                  parms = null
+                  crp = save_crp
+                  end
+        When row = 0 then nop
+        When zsel = "L" then do
+             launch = 1
+             Select
+             When change = 0 then
+                  call start_app
+             Otherwise do
+                  zedsmsg = "Warning"
+                  zedlmsg = "Save the table before",
+                            "testing an application."
+                  "SETMSG MSG(ISRZ001)"
+                  end
+             end
+             end
+        When zsel = "P" then do
+             if change = 0 then
+                call prompt_app
+             else do
+                  zedsmsg = "Warning"
+                  zedlmsg = "Save the table before",
+                            "testing an application."
+                  "SETMSG MSG(ISRZ001)"
+                  end
+             end
+        When zsel = "S" then do
+             if change = 0 then
+                call start_app
+             else do
+                  zedsmsg = "Warning"
+                  zedlmsg = "Save the table before",
+                            "testing an application."
+                  "SETMSG MSG(ISRZ001)"
+                  end
+             end
+        When zsel = "D" then do
+             "TBDelete" plptbl
+             change = 1
+             end
+        When zsel = "I" then do
+             "Control Display Save"
+             call do_insert
+             "Control Display Restore"
+             if c_stat = 1 then change = 1
+             end
+        When zsel = "M" then do
+             "Control Display Save"
+             call do_insert
+             "Control Display Restore"
+             if c_stat = 1 then change = 1
+             end
+        When zsel = "C" then do
+             call do_change
+             if c_stat = 1 then change = 1
+             end
+        When zsel = "A" then do
+             call do_alias
+             if c_stat = 1 then change = 1
+             end
+        When zsel = "R" then do
+             save_app = app
+             app = "*CHANGE*"
+             call do_change
+             if c_stat = 1 then change = 1
+             end
+        When zsel = "B" then
+             call browse_info
+        When zsel = "E" then
+             call edit_info
+        otherwise nop
+        end
+  end
+  call close_table
+  return
+
+/* ----------------------------------------------------- *
+ * Browse_Info routine                                   *
+ * ----------------------------------------------------- */
+ Browse_Info:
+   if datatype(app) = "NUM" then do
+      zedsmsg = "Warning"
+      zedlmsg = "This application does not have any",
+                "information available."
+      "SETMSG MSG(ISRZ001)"
+      return
+      end
+   "Control Display Save"
+   "LMINIT dataid(brid) dataset("plpispf_table") Enq(shr)"
+   "LMOpen dataid("brid")"
+   "LMMFind dataid("brid") member("app")"
+   b_rc = rc
+   "LMClose dataid("brid")"
+   if b_rc > 0 then do
+      zedsmsg = ""
+      zedlmsg = "Information on application" app ,
+                "is not available at this time."
+      end
+   if b_rc = 0 then
+      "Browse dataid("brid") Member("app") Panel(plpbr)"
+   "LMFRee dataid("brid")"
+   "Control Display Restore"
+   if b_rc > 0 then
+      "SETMSG MSG(ISRZ001)"
+   return
+
+/* ----------------------------------------------------- *
+ * Edit_Info routine                                     *
+ * ----------------------------------------------------- */
+ Edit_Info:
+   if datatype(app) = "NUM" then do
+      zedsmsg = "Error:"
+      zedlmsg = "You can not create a Info entry for an",
+                "application name that is numeric."
+      "SETMSG MSG(ISRZ001)"
+      return
+      end
+   "Control Display Save"
+   "LMINIT dataid(edid) dataset("plpispf_table") Enq(shr)"
+   "EDit dataid("edid") Member("app") Macro(plpedm)"
+   "LMFRee dataid("edid")"
+   "Control Display Restore"
+   return
+
+/* ----------------------------------------------------- *
+ * Do_Alias routine                                      *
+ * ----------------------------------------------------- */
+ Do_Alias:
+    save_app = app
+    c_stat = 0
+    zcmd = null
+    zsel = null
+    cmd  = "**"app
+    app  = "*Change*"
+    "Control Display Save"
+    do until src = 8
+      "Display panel(plpadma)"
+      src = rc
+      if zcmd = "CANCEL" then do
+         "Control Display Restore"
+         return
+         end
+      if save_app = app then do
+         zedsmsg = "Error"
+         zedlmsg = app "is the same as" save_app,
+                  "which is not allowed for an alias."
+         "SETMSG MSG(ISRZ001)"
+       end
+      if app = null then do
+         "Control Display Restore"
+         return
+         end
+      if datatype(app) = "NUM" then do
+         wapp = app + 100000000
+         wapp = ">"right(wapp,8)
+         end
+      else wapp = app
+      if src = 8 then do
+         "TBMod" plptbl "order"
+         c_stat = 1
+         end
+      end
+    "Control Display Restore"
+    if app <> save_app then do
+       call find_app
+       end
+    return
+
+/* ----------------------------------------------------- *
+ * Do_Change routine                                     *
+ * ----------------------------------------------------- */
+ Do_Change:
+    src = 0
+    add   = "No"
+    zcmd = null
+    if zsel = "I" then do
+       cp1 = "PLPDSPE"
+       cp2 = "PLPDSPEU"
+       cpm = "PLSDSPM"
+       action = null
+       ddadd = null
+       end
+       else do
+            cp1 = "PLPADME"
+            cp2 = "PLPADMEU"
+            cpm = "PLPADMM"
+            if length(ddadd) > 0 then do
+               add = "Yes"
+               end
+            end
+    parse value ddadd with dd1"/"dsn1"/"dd2"/"dsn2"/" ,
+                           dd3"/"dsn3"/"dd4"/"dsn4"/" ,
+                           dd5"/"dsn5"/"dd6"/"dsn6"/" ,
+                           dd7"/"dsn7"/"dd8"/"dsn8"/" ,
+                           dd9"/"dsn9"/"dd10"/"dsn10"/" ,
+                           dd11"/"dsn11"/"dd12"/"dsn12"/",
+                           dd13"/"dsn13"/"dd14"/"dsn14"/",
+                           dd15"/"dsn15
+    if app <> "*CHANGE*" then
+       save_app = app
+    c_stat = 0
+    "Control Display Save"
+    if action <> "USER" then
+       if left(cmd,2) = "**"
+          then action = "USER"
+       if left(cmd,8) = "%PLPISPF" then
+          action = "USER"
+    do until src = 8
+      if action <> "USER" then do
+         if left(cmd,1) <> ">"
+            then do
+                 "Display panel("cp1")"
+                 if length(dd1) > 0 then
+                    "Display Panel(plpadmdb)"
+                 end
+            else "Display panel("cpm")"
+         end
+      else do
+         parse value cmd with w1 w2 w3 w4
+         if left(w2,1) = "/"
+         then do
+            cmd = w1 w2 w3
+            cmdopt = w4
+            end
+         else do
+            cmd = w1 w2
+            cmdopt = w3 w4
+            end
+         if left(cmd,1) <> ">"
+            then "Display panel("cp2")"
+            else "Display panel("cpm")"
+         cmd = cmd cmdopt
+         end
+      src = rc
+      if action <> "USER" then
+         if left(cmd,2) = "**"
+            then action = null
+      if zcmd = "CANCEL" then do
+        "Control Display Restore"
+        return
+        end
+      if app = null then do
+        "Control Display Restore"
+        return
+        end
+      if zsel <> "I" then
+      if src = 8 then
+         if app <> "*CHANGE*" then do
+         if datatype(app) = "NUM" then do
+            wapp = app + 100000000
+            wapp = ">"right(wapp,8)
+            end
+         else wapp = app
+         if cp1 = "PLPADME" then do
+            if add = "Yes" then do forever
+               "Display panel(plpadmdd)"
+               drc = rc
+               ddadd = dd1"/"dsn1"/"dd2"/"dsn2"/",
+                       dd3"/"dsn3"/"dd4"/"dsn4"/",
+                       dd5"/"dsn5"/"dd6"/"dsn6"/",
+                       dd7"/"dsn7"/"dd8"/"dsn8"/",
+                       dd9"/"dsn9"/"dd10"/"dsn10"/",
+                       dd11"/"dsn11"/"dd12"/"dsn12"/",
+                       dd13"/"dsn13"/"dd14"/"dsn14"/",
+                       dd15"/"dsn15
+               if drc > 7 then leave
+               end
+            end
+         "TBMod" plptbl "order"
+         c_stat = 1
+         end
+    end
+    "Control Display Restore"
+    if app <> "*CHANGE*" then
+       if zsel <> "R" then
+          if save_app <> app then do
+             new_app = app
+             app = save_app
+             call find_app
+             if found = 1 then
+                "TBDelete" plptbl
+             app = new_app
+             end
+   if app <> "*CHANGE*" then
+      call find_app
+   return
+
+/* ----------------------------------------------------- *
+ * Do_Insert routine                                     *
+ * ----------------------------------------------------- */
+ Do_Insert:
+    new_menu = 0
+    if left(zcmd,1) = "M" then new_menu = 1
+    if zsel         = "M" then new_menu = 1
+    zcmd = null
+    zsel = null
+    "TBVClear" plptbl
+    src    = 0
+    c_stat = 0
+    add    = null
+    if length(ddadd) > 0 then do
+       add = "Yes"
+       parse value ddadd with dd1"/"dsn1"/"dd2"/"dsn2"/" ,
+                              dd3"/"dsn3"/"dd4"/"dsn4"/" ,
+                              dd5"/"dsn5"/"dd6"/"dsn6"/" ,
+                              dd7"/"dsn7"/"dd8"/"dsn8"/" ,
+                              dd9"/"dsn9"/"dd10"/"dsn10"/" ,
+                              dd11"/"dsn11"/"dd12"/"dsn12"/",
+                              dd13"/"dsn13"/"dd14"/"dsn14"/",
+                              dd15"/"dsn15
+       end
+    do until src = 8
+      if new_menu = 1
+         then "Display panel(plpadmm)"
+         else "Display panel(plpadme)"
+      src = rc
+      if zcmd = "CANCEL" then return
+      if src = 8 then do
+          if new_menu = 1 then call get_new_menu
+          if app = null then return
+          if datatype(app) = "NUM" then do
+             wapp = app + 100000000
+             wapp = ">"right(wapp,8)
+             end
+          else wapp = app
+       if new_menu = 0 then do
+          if add = "Yes" then do forever
+             "Display panel(plpadmdd)"
+             drc = rc
+             ddadd = dd1"/"dsn1"/"dd2"/"dsn2"/",
+                     dd3"/"dsn3"/"dd4"/"dsn4"/",
+                     dd5"/"dsn5"/"dd6"/"dsn6"/",
+                     dd7"/"dsn7"/"dd8"/"dsn8"/",
+                     dd9"/"dsn9"/"dd10"/"dsn10"/",
+                     dd11"/"dsn11"/"dd12"/"dsn12"/",
+                     dd13"/"dsn13"/"dd14"/"dsn14"/",
+                     dd15"/"dsn15
+             if drc > 7 then leave
+             end
+          end
+          "TBAdd" plptbl "order"
+          c_stat = 1
+      end
+   end
+   call find_app
+   src = 0
+   change = 1
+   return
+
+/* ----------------------- *
+ * Get New Menu Table Name *
+ * ----------------------- */
+ Get_New_Menu: Procedure expose app applid plpispf_table cmd ,
+                                plplib
+ Address TSO
+ work = translate(plpispf_table," ","'")
+ work = "'"strip(work)"(menuctr)'"
+ ddn = "PLPCTR"random(99)
+ "alloc f("ddn") shr ds("work")"
+ if "OK" = sysdsn(work) then
+    "Execio * diskr" ddn "(finis stem in."
+ else do
+      if left(plplib,3) = "GRP" then in.1 = "W 0"
+                                else in.1 = "A 0"
+      end
+ parse value in.1 with prefix ctr
+ ctr    = ctr + 1
+ if ctr = 1000 then do
+    ctr = 1
+    if left(plplib,3) <> "GRP"
+    then
+       prefix = translate(prefix, ,
+                 'BCDEFGHIJKLMNOPQRSTUVWXYZA', ,
+                 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    else
+       prefix = translate(prefix, ,
+                 'ZWXY', ,
+                 'WXYZ')
+    end
+ in.1   = prefix ctr
+ applid = ctr + 1000
+ applid = prefix""right(applid,3)
+ "Execio * diskw" ddn "(finis stem in."
+ "Free f("ddn")"
+ cmd = ">Menu"
+ return
+
+/* ----------------------------------------------------- *
+ * Do_Locate Routine                                     *
+ * ----------------------------------------------------- */
+ Do_Locate:
+    locate = 1
+    crp    = 0
+    last_find = 0
+    call do_find
+    locate = 0
+    return
+
+/* ----------------------------------------------------- *
+ * Do_Find Routine                                       *
+ * ----------------------------------------------------- */
+ Do_Find:
+/* ----------------------------------------------------- *
+ * Setup for the search                                  */
+ parse value "" with zsel find_loop search found
+ find_opt = strip(find_opt)
+ num      = datatype(find_opt)
+ rowid = crp
+ if last_find = null then last_find = crp
+ if zcmd = "RFIND" then
+    last_find = last_find + 1
+ zcmd = null
+ "TBTop" plptbl
+ "TBSkip" plptbl "Position(rowid) Number("last_find")"
+ if rc = 8 then do
+    "TBTop" plptbl
+    "TBSkip" plptbl "Position(rowid)"
+    end
+ zedsmsg = "Found"
+
+/* ----------------------------------------------------- *
+ * Now do the search                                     */
+ Do forever
+    last_row = rowid
+    if locate = 0 then do
+       if admin = 1
+          then search = app applid msg panel skel table ,
+                        table cmd llib step clist ,
+                        rexx pgm parm mode ipanel iopt desc
+          else search = app desc
+          search = translate(search)
+          end
+    uapp   = translate(app)
+    if locate = 1 then do
+       len = length(find_opt)
+       if left(app,len) = find_opt then found = 1
+       end
+    if locate <> 1 then
+       if pos(find_opt,search) > 0 then found = 1
+    if locate = 1 then
+    if found <> 1 then
+    if num <> "NUM" then
+       if find_opt < uapp then do
+          crp    = rowid -1
+          if crp = 0 then crp = 1
+          rowcrp = crp
+          last_find = crp
+          if datatype(find_opt) <> "NUM" then do
+             zedsmsg = "Near find"
+             zedlmsg = "Found command closest to" find_opt
+             end
+          else do
+               zedsmsg = "Not Found"
+               zedlmsg = options "not found."
+               save_crp = 0
+               end
+          "SETMSG MSG(ISRZ001)"
+          leave
+          end
+    if found = 1 then do
+       crp    = rowid + 0
+       rowcrp = crp
+       last_find = crp
+       zedlmsg = find_opt "found in row:" crp
+       "SETMSG MSG(ISRZ001)"
+       leave
+       end
+    "TBSkip" plptbl "Position(rowid)"
+    src = rc
+    if locate = 1 then if src = 8 then do
+          crp    = last_row
+          rowcrp = crp
+          last_find = crp
+          if "NUM" <> datatype(find_opt) then do
+             zedsmsg = "Near find"
+             zedlmsg = "Found command closest to" find_opt
+             end
+          else do
+               zedsmsg = "Not found"
+               zedlmsg = find_opt "not found."
+               crp    = 0
+               rowcrp = 0
+               end
+          "SETMSG MSG(ISRZ001)"
+          leave
+       end
+    if src = 8 then do
+       "TBTop" plptbl
+       zedsmsg = "Wrapped"
+       if find_loop = "on" then do
+          zedsmsg = "Not Found"
+          zedlmsg = find_opt "not found during search"
+          rowid = crp
+          "SETMSG MSG(ISRZ001)"
+          leave
+          end
+       else find_loop = "on"
+       end
+    zsel = null
+    end
+    return
+
+/* ------------------------------------------- *
+ * Do_Reset routine                            *
+ * 1. Closes the current table                 *
+ * 2. Reinvokes the application to start clean *
+ * 3. Exits the application when done          *
+ * ------------------------------------------- */
+ Do_Reset:
+   call close_table
+   "Select CMD(%"command options ")"
+   exit 0
+
+/* ----------------------------------------------------- *
+ * Do_Only Routine                                       *
+ * ----------------------------------------------------- */
+ Do_Only:
+ parse value "" with zsel find_loop search
+ only_opt = strip(find_opt)
+ zcmd     = null
+ ocount   = 0
+ "TBTop" plptbl
+ rowid = 1
+ "TBSkip" plptbl "Position(rowid)"
+
+ Do forever
+    if admin = 1
+       then search = app applid msg panel skel table ,
+                     table cmd llib step clist ,
+                     rexx pgm parm mode ipanel iopt desc
+       else search = app desc
+    search = translate(search)
+    if (only_flag = "X") then
+       if pos(only_opt,search) > 0 then found = 0
+                                   else found = 1
+    ELSE
+    if pos(only_opt,search) > 0 then found = 1
+                                else found = 0
+    if found = 1 then do
+       ocount = ocount + 1
+       rowid = rowid + 1
+       "TBSkip" plptbl "Position(rowid)"
+       /* --------------------------------------------------------- *
+        * If end of table then check for any hits                   *
+        * If none then call the do_reset routine to rebuild the     *
+        * table.                                                    *
+        * If hits then get back to the top of the table and return. *
+        * --------------------------------------------------------- */
+         if rc > 0 then do
+            if ocount = 0 then do
+               call do_reset
+               end
+            else do
+                 "TBTop" plptbl
+                 zedsmsg = ocount "Hits"
+                 zedlmsg = ocount "applications matched the ONLY" ,
+                          "search string:" only_opt
+                 "SETMSG MSG(ISRZ001)"
+                 return
+                 end
+            end
+       end
+    if found = 0 then do
+       "TBDelete" plptbl
+       "TBQuery" plptbl "Rownum(rcount)"
+       if rcount = 0 then do
+          zedsmsg = "No Hits"
+          zedlmsg = "No applications match the specified ONLY search" ,
+                    "string of:" only_opt
+          "SETMSG MSG(ISRZ001)"
+          call do_reset
+          return
+          end
+       "TBSkip" plptbl "Position(rowid)"
+       /* --------------------------------------------------------- *
+        * If end of table then check for any hits                   *
+        * If none then call the do_reset routine to rebuild the     *
+        * table.                                                    *
+        * If hits then get back to the top of the table and return. *
+        * --------------------------------------------------------- */
+         if rc > 0 then do
+            if ocount = 0 then do
+               call do_reset
+               end
+            else do
+                 "TBTop" plptbl
+                 zedsmsg = ocount "Hits"
+                 zedlmsg = ocount "applications matched the ONLY" ,
+                          "search string:" only_opt
+                 "SETMSG MSG(ISRZ001)"
+                 return
+                 end
+            end
+    end
+    end
+    return
+
+/* ----------------------------------------------------- *
+ * Test/Reset Group Table DsName                         *
+ * ----------------------------------------------------- */
+ Test_Group_Table:
+ do forever
+   "Addpop"
+   "Display panel(plpgpop)"
+   src = rc
+   "Rempop"
+   if left(grpdsn,1) <> "'" then do
+      if sysvar('syspref') <> null then
+         grpdsn = "'"sysvar('syspref')"."grpdsn"'"
+      end
+   if sysdsn(grpdsn) <> "OK" then do
+      zedsmsg = null
+      zedlmsg = grpdsn sysdsn(grpdsn)
+      "SETMSG MSG(ISRZ001)"
+      end
+   "Vput (grpdsn) Profile"
+   if src > 0 then leave
+   end
+return
+
+/* -------------------------------------- *
+ * Allocate the requested Additional DSNs *
+ * -------------------------------------- */
+ Alloc_ddadd:
+  parse value "" with all_dd all_dsn
+  call test_ddadd dd1  "/" dsn1
+  call test_ddadd dd2  "/" dsn2
+  call test_ddadd dd3  "/" dsn3
+  call test_ddadd dd4  "/" dsn4
+  call test_ddadd dd5  "/" dsn5
+  call test_ddadd dd6  "/" dsn6
+  call test_ddadd dd7  "/" dsn7
+  call test_ddadd dd8  "/" dsn8
+  call test_ddadd dd9  "/" dsn9
+  call test_ddadd dd10 "/" dsn10
+  call test_ddadd dd11 "/" dsn11
+  call test_ddadd dd12 "/" dsn12
+  call test_ddadd dd13 "/" dsn13
+  call test_ddadd dd14 "/" dsn14
+  call test_ddadd dd15 "/" dsn15
+  call do_alloc_ddadd
+  return
+
+/* ---------------------------------- *
+ * Test the Additional DD Allocations *
+ * ---------------------------------- */
+ Test_DDAdd:
+   arg ddip
+   parse value ddip with ta_dd "/" ta_dsn
+   ta_dd = strip(ta_dd)
+   if length(ta_dd) > 0 then
+      if length(all_dd) > 0 then do
+         call do_alloc_ddadd
+         all_dsn = null
+         end
+   if length(ta_dd) > 0 then
+      all_dd = ta_dd
+   all_dsn = strip(all_dsn ta_dsn)
+   return
+
+/* -------------------- *
+ * Do the DD Allocation *
+ * -------------------- */
+ Do_Alloc_ddadd:
+   IF ABBREV(all_dsn, "SYSOUT(") THEN
+        ADDRESS "TSO" "ALLOC F("ALL_DD") REUSE" ALL_DSN
+   ELSE ADDRESS "TSO" "ALLOC F("ALL_DD") SHR REUSE DS("ALL_DSN")"
+   return
+
+/* ---------------------------------- *
+ * Free the requested Additional DSNs *
+ * ---------------------------------- */
+ Free_ddadd:
+  if length(strip(dd1)) > 0 then "Free F("dd1")"
+  if length(strip(dd2)) > 0 then "Free F("dd2")"
+  if length(strip(dd3)) > 0 then "Free F("dd3")"
+  if length(strip(dd4)) > 0 then "Free F("dd4")"
+  if length(strip(dd5)) > 0 then "Free F("dd5")"
+  if length(strip(dd6)) > 0 then "Free F("dd6")"
+  if length(strip(dd7)) > 0 then "Free F("dd7")"
+  if length(strip(dd8)) > 0 then "Free F("dd8")"
+  if length(strip(dd9)) > 0 then "Free F("dd9")"
+  if length(strip(dd10)) > 0 then "Free F("dd10")"
+  if length(strip(dd11)) > 0 then "Free F("dd11")"
+  if length(strip(dd12)) > 0 then "Free F("dd12")"
+  if length(strip(dd13)) > 0 then "Free F("dd13")"
+  if length(strip(dd14)) > 0 then "Free F("dd14")"
+  if length(strip(dd15)) > 0 then "Free F("dd15")"
+  return
+
+/* ----------------------------------------------------- *
+ * Fix_Up_DsNames by resolving any system symbols        *
+ * ----------------------------------------------------- */
+ Fix_Up_DsNames:
+ clist = fix_symdef(clist)
+ rexx  = fix_symdef(rexx)
+ msg   = fix_symdef(msg)
+ panel = fix_symdef(panel)
+ skel  = fix_symdef(skel)
+ table = fix_symdef(table)
+ llib  = fix_symdef(llib)
+ step  = fix_symdef(step)
+ if length(ddadd) > 0 then do
+    dsn1  = fix_symdef(dsn1)
+    dsn2  = fix_symdef(dsn2)
+    dsn3  = fix_symdef(dsn3)
+    dsn4  = fix_symdef(dsn4)
+    dsn5  = fix_symdef(dsn5)
+    dsn6  = fix_symdef(dsn6)
+    dsn7  = fix_symdef(dsn7)
+    dsn8  = fix_symdef(dsn8)
+    dsn9  = fix_symdef(dsn9)
+    dsn10 = fix_symdef(dsn10)
+    dsn11 = fix_symdef(dsn11)
+    dsn12 = fix_symdef(dsn12)
+    dsn13 = fix_symdef(dsn13)
+    dsn14 = fix_symdef(dsn14)
+    dsn15 = fix_symdef(dsn15)
+ end
+return
+
+/* ----------------------------------------------------- *
+ * Fixup DsName found with system symbolics              *
+ * ----------------------------------------------------- */
+ Fix_Symdef: procedure
+ ARG DsName
+   DO WHILE pos("&",DsName) > 0
+      parse value DsName with . '&' symbol '.' rest
+      IF rest = "" THEN ParseOn = '&'symbol
+         ELSE           ParseOn = '&'symbol'.'
+      PARSE VALUE DsName WITH DsNamel (ParseOn) DsNamer
+      if (symbol = "ZUSER") | (symbol = "SYSUID") THEN
+           DsName = DsNamel||USERID()||DsNamer
+      else DsName = DsNamel||MVSVAR('SYMDEF',symbol)||DsNamer
+   end
+ return DsName
+
+/* ----------------- *
+ * Generate a Report *
+ * ----------------- */
+ Do_Report: procedure expose plptbl null plpispf_table zcmd
+   "TBTop" plptbl
+   out.1 = "1Product Launch Point Table Report"
+   out.2 = " Table" plptbl "on" date('u') "at" time()
+   c = 2
+   do forever
+      "TBSkip" plptbl
+      if rc > 0 then leave
+      c = c + 1
+      out.c = "0"left("-",60,"-")
+      call add_rep "Application:"  app
+      call add_rep "ISPF ApplID:"  applid
+      call add_rep "Description:"  desc
+      call add_rep "ISPF Mode:"    mode
+      call add_rep "Step Library:" step
+      call add_rep "ISPF Load:"    llib
+      call add_rep "ISPF Msgs:"    msg
+      call add_rep "ISPF Panels:"  panel
+      call add_rep "ISPF Skels:"   skel
+      call add_rep "ISPF Table:"   table
+      call add_rep "CLIST:"        clist
+      call add_rep "REXX:"         rexx
+      call add_rep "Command:"      cmd
+      call add_rep "Program:"      pgm
+      call add_rep "   Parm:"      parm
+      call add_rep "ISPF Panel:"   ipanel
+      call add_rep "    option:"   iopt
+      if length(ddadd) > 0 then do
+         parse value ddadd with dd1"/"dsn1"/"dd2"/"dsn2"/" ,
+                                dd3"/"dsn3"/"dd4"/"dsn4"/" ,
+                                dd5"/"dsn5"/"dd6"/"dsn6"/" ,
+                                dd7"/"dsn7"/"dd8"/"dsn8"/" ,
+                                dd9"/"dsn9"/"dd10"/"dsn10"/" ,
+                                dd11"/"dsn11"/"dd12"/"dsn12"/",
+                                dd13"/"dsn13"/"dd14"/"dsn14"/",
+                                dd15"/"dsn15
+         call add_rep "DD/DSN:"left(dd1,10) dsn1
+         call add_rep "DD/DSN:"left(dd2,10) dsn2
+         call add_rep "DD/DSN:"left(dd3,10) dsn3
+         call add_rep "DD/DSN:"left(dd4,10) dsn4
+         call add_rep "DD/DSN:"left(dd5,10) dsn5
+         call add_rep "DD/DSN:"left(dd6,10) dsn6
+         call add_rep "DD/DSN:"left(dd7,10) dsn7
+         call add_rep "DD/DSN:"left(dd8,10) dsn8
+         call add_rep "DD/DSN:"left(dd9,10) dsn9
+         call add_rep "DD/DSN:"left(dd10,10) dsn10
+         call add_rep "DD/DSN:"left(dd11,10) dsn11
+         call add_rep "DD/DSN:"left(dd12,10) dsn12
+         call add_rep "DD/DSN:"left(dd13,10) dsn13
+         call add_rep "DD/DSN:"left(dd14,10) dsn14
+         call add_rep "DD/DSN:"left(dd15,10) dsn15
+         end
+   rdd = 'rdd'random(999)
+   if left(plpispf_table,1) = "'"
+      then do
+           plpdoc = "'"substr(plpispf_table,2, ,
+                    length(plpispf_table)-2)"("app")'"
+           end
+      else plpdoc = plpispf_table'('plpapp')'
+    if word(zcmd,2) /= '' then
+    if 'OK' = sysdsn(plpdoc) then do
+        Address TSO
+        'Alloc f('rdd') shr reuse ds('plpdoc')'
+        'Execio * diskr' rdd '(finis stem rd.'
+        'Free f('rdd')'
+        Address ISPExec
+        call add_repb "Documentation:"
+        call add_repb " "
+        do id = 1 to rd.0
+           call add_repb rd.id
+           end
+        end
+      end
+ c = c + 1
+
+ if sysvar("syspref") <> sysvar("sysuid")
+ then do
+      if sysvar("sysuid") = ""
+         then hlq= sysvar("syspref")
+         else hlq= sysvar("syspref")"."sysvar("sysuid")
+      end
+      else hlq= sysvar("syspref")
+ s = time("L")  /* get the current time hh:mm:ss.th */
+ t = substr(s,1,2)substr(s,4,2)substr(s,7,2)substr(s,10,1)
+ dsn = hlq"."translate("ispmenu.d"date("j")".t"t".list")
+
+ out.c = "-Complete Report for Product Launch Point Table" plptbl
+ "Control Display Save"
+ Address TSO
+ ddn = "PLP"random(999)
+ call msg "off"
+ "Delete" dsn
+ "Alloc f("ddn") dsn('"dsn"') new spa(1,1) tr",
+        "Recfm(v b a) lrecl(80) blksize(0)"
+ "Execio * diskw "ddn" (finis stem out."
+ Address ISPExec
+ "LMInit Dataid(plp) Ddname("ddn") Enq(shr)"
+ "Browse Dataid("plp")"
+ "LMFree Dataid("plp")"
+ Address TSO "Free f("ddn")"
+ "Control Display Restore"
+ zedsmsg = null
+ zedlmsg = "PLP Report Dataset" dsn "has been retained",
+           "for later processing.  Delete it if you no",
+           "longer require it."
+ "SETMSG MSG(ISRZ001)"
+ return
+
+/* ------------------------ *
+ * Add Record to the Report *
+ * ------------------------ */
+ Add_Rep:
+ parse arg keyword":" data
+ data = strip(data)
+ if length(data) = 0 then return
+ c = c + 1
+ keyword = strip(keyword)":"
+ out.c = " "left(keyword,17) data
+ return
+
+/* ------------------------ *
+ * Add Record to the Report *
+ * with blank records       *
+ * ------------------------ */
+ Add_RepB:
+ parse arg data
+ c = c + 1
+ out.c = " "data
+ return
+
+/* ----------------------------------------------------- *
+ * Trap uninitialized variables                          *
+ * ----------------------------------------------------- */
+Novalue:
+
+Say "Variable" condition("Description") "undefined in line" sigl":"
+Say sourceline(sigl)
+Say "Contact systems support about this error."
+if open = 1 then call close_table
+Exit 16
+
+Plpexec: Procedure expose app
+/* ---------------------  rexx procedure  ---------------------- *
+ * Name:      PLPEXEC                                            *
+ *                                                               *
+ * Function:  To provide a generalized stub to drive ISPF        *
+ *            applications without requiring the writing of      *
+ *            specific individual clists or execs and without    *
+ *            requiring that the application be installed into   *
+ *            existing allocated libraries.                      *
+ *                                                               *
+ *---------------------------------------------------------------*
+ *            NOTE:                                              *
+ *            Use of Tone's Dynastep or Gilbert Saint-flour's    *
+ *            dynamic STEPLIB command are supported.             *
+ *            Also supported is Dan Dalby Steplib command.       *
+ *              (from cbt file 452)                              *
+ *                                                               *
+ *            Find *custom* to change the default from           *
+ *            Dynastep to Steplib or to none if neither are      *
+ *            installed.                                         *
+ *---------------------------------------------------------------*
+ *                                                               *
+ * Syntax:    %PLPEXEC options                                   *
+ *            Where the options are:                             *
+ *                                                               *
+ *            APPLID(ISPF Application ID)                        *
+ *            SCRNAME(Screen-name)                               *
+ *            CLIST(CLIST Library or Libraries)      (note 1)    *
+ *            EXEC(Rexx Library or Libraries)        (note 1)    *
+ *            LLIB(ISPF Load Library or Libraries)   (note 1)    *
+ *            STEP(Steplib Library or Libraries)     (note 1)    *
+ *            MSGS(ISPF Messages Library or Libraries)  (note 1) *
+ *            PANELS(ISPF Panels Library or Libraries)  (note 1) *
+ *            SKELS(ISPF Skeleton Library or Libraries) (note 1) *
+ *            TABLE(ISPF Table Library or Libraries)    (note 1) *
+ *            CMD(command options) MODE(|FSCR|LINE)              *
+ *            or                                                 *
+ *            PGM(program) PARM(parm) MODE(|FSCR|LINE)           *
+ *            or                                                 *
+ *            PANEL(panel-name) OPT(option)                      *
+ *                                                               *
+ * Author:    Lionel B. Dyck                                     *
+ *                                                               *
+ * History:                                                      *
+ *            v1.7 - 07/05/16 - cleanup                          *
+ *            v1.6 - 03/11/00 - cleanup                          *
+ *            v1.5 - 02/29/00 - renamed from ISPFPROD for        *
+ *                              use with PLPISPF application     *
+ *            v0.1 - 08/03/99 - creation                         *
+ *                                                               *
+ * ------------------------------------------------------------- */
+arg options
+
+/* ----------------------------------------------------------------- *
+ | Define the steplib command being used  *custom*                   |
+ |    Tone = Tone's Dynastep                                         |
+ |       http://www.tonesoft.com/products/dynastep/index.html        |
+ |    GSF  = Gilbert Saint-flour's Steplib                           |
+ |       http://mywebpages.comcast.net/gsf/tools/                    |
+ |    DAND = Dan Dalbys' Steplib (Freeware)                          |
+ |       http://cbttape.org - file 452                               |
+ |     None = neither installed                                      |
+ * ----------------------------------------------------------------- */
+/* steplib = "Tone" */
+/* steplib = "GSF" */
+/* steplib = "DAND" */
+/* steplib = "None" */
+steplib = "DAND"
+
+/* ----------------------------------------------------- *
+ * Test for debug option                                 *
+ * ----------------------------------------------------- */
+if wordpos("DEBUG",options) > 1 then trace "?i"
+
+/* ----------------------------------------------------- *
+ * Setup defaults                                        *
+ * ----------------------------------------------------- */
+ id = sysvar('sysicmd')":"
+ bl = left(" ",3)
+
+/* ----------------------------------------------------- *
+ * Clear out variables that we will be using             *
+ * ----------------------------------------------------- */
+parse value "" with null step table skels msgs panels,
+                    applid cmd llib exec clist,
+                    pgm parm mode panel opt sel scrname
+
+/* ----------------------------------------------------- *
+ * Now process all the keywords that we will use         *
+ * Remove option as processed to find invalid options    *
+ * ----------------------------------------------------- */
+if pos("APPLID(",options) > 0 then do
+   parse value options with . "APPLID(" applid ")" .
+   p1 = pos("APPLID(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("CLIST(",options) > 0 then do
+   parse value options with . "CLIST(" clist ")" .
+   p1 = pos("CLIST(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("CMD(",options) > 0 then do
+   parse value options with . "CMD(" cmd
+   L1 = LENGTH(STRIP(CMD))
+   CMD = SUBSTR(CMD,1,L1-1)
+   p1 = pos("CMD(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   cmd = translate(cmd,"()",x2c(0102))
+   end
+if pos("EXEC(",options) > 0 then do
+   parse value options with . "EXEC(" exec ")" .
+   p1 = pos("EXEC(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("MODE(",options) > 0 then do
+   parse value options with . "MODE(" mode +1 ")" .
+   p1 = pos("MODE(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("LLIB(",options) > 0 then do
+   parse value options with . "LLIB(" llib ")" .
+   p1 = pos("LLIB(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("MSGS(",options) > 0 then do
+   parse value options with . "MSGS(" msgs ")" .
+   p1 = pos("MSGS(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("PANEL(",options) > 0 then do
+   parse value options with . "PANEL(" panel ")" .
+   p1 = pos("PANEL(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("PANELS(",options) > 0 then do
+   parse value options with . "PANELS(" panels ")" .
+   p1 = pos("PANELS(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("PARM(",options) > 0 then do
+   p1 = pos("PARM(",options)
+   pd = 1
+   p2 = pos(")",options,p1)
+   parse value options with . "PARM(" parm ")" .
+   parm = translate(parm,"()",x2c(0102))
+   options = delstr(options,p1,p2-p1+pd)
+   end
+if pos("PGM(",options) > 0 then do
+   parse value options with . "PGM(" pgm ")" .
+   p1 = pos("PGM(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("OPT(",options) > 0 then do
+   parse value options with . "OPT(" opt ")" .
+   p1 = pos("OPT(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("SCRNAME(",options) > 0 then do
+   parse value options with . "SCRNAME(" scrname ")" .
+   p1 = pos("SCRNAME(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+if pos("SKELS(",options) > 0 then do
+   parse value options with . "SKELS(" skels ")" .
+   p1 = pos("SKELS(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+steplib = translate(steplib)
+if steplib <> "NONE" then
+   if pos("STEP(",options) > 0 then do
+      parse value options with . "STEP(" step ")" .
+      p1 = pos("STEP(",options)
+      p2 = pos(")",options,p1)
+      options = delstr(options,p1,p2-p1+1)
+      end
+if pos("TABLE(",options) > 0 then do
+   parse value options with . "TABLE(" table ")" .
+   p1 = pos("TABLE(",options)
+   p2 = pos(")",options,p1)
+   options = delstr(options,p1,p2-p1+1)
+   end
+
+/* ----------------------------------------------------- *
+ * Generate the ISPEXEC Select command                   *
+ * ----------------------------------------------------- */
+select
+  when pgm <> null then do
+       sel = "PGM("pgm")"
+       if parm <> null then
+          sel = sel "PARM("parm")"
+       if mode <> null THEN SELECT
+          WHEN ABBREV(mode,"F") THEN sel = sel "MODE(FSCR)"
+          WHEN ABBREV(mode,"L") THEN sel = sel "MODE(LINE)"
+        OTHERWISE; NOP; END
+       end
+  when panel <> null then do
+       sel = "PANEL("panel")"
+       if opt <> null then
+          sel = sel "OPT("opt")"
+       if mode <> null THEN SELECT
+          WHEN ABBREV(mode,"F") THEN sel = sel "MODE(FSCR)"
+          WHEN ABBREV(mode,"L") THEN sel = sel "MODE(LINE)"
+        OTHERWISE; NOP; END
+       end
+  when cmd <> null then do
+       parse var cmd wschk wscmd
+       if wschk = 'WS' then Do
+          wc = words(wscmd)
+          if left(word(wscmd,wc),3) = "MOD" then do
+             mode = word(wscmd,wc)
+             wscmd = subword(wscmd,1,wc-1)
+             end
+          else mode = ""
+          sel = "WSCMD("wscmd")" mode
+          end
+       else sel = "CMD("cmd")"
+       end
+  otherwise nop
+  end
+
+if length(scrname) > 0 then do
+  if length(scrname) = 1 then do
+      if cmd <> null then do
+         parse value cmd with x y z .
+         if left(cmd,2) = "**" then do
+            parse value cmd with "**" y .
+            scrname = y
+            end
+         else scrname = "APP"scrname
+         end
+      else scrname = "APP"scrname
+      end
+  end
+  else do
+       if length(app) = 1 then
+          scrname = "APP"app
+       else scrname = app
+       if datatype(scrname) = "NUM"
+          then scrname = "@"left(scrname,7)
+       end
+  sel = sel "SCRNAME("scrname")"
+
+if applid <> null then sel = sel "NEWAPPL("applid") PASSLIB"
+
+/* ----------------------------------------------------- *
+ * Once we have the keywords setup the environment.      *
+ * ----------------------------------------------------- */
+/* ----------------------------------- *
+ * trxFlag = 0 if TRX is not installed *
+ *         = 1 if TRX is installed     *
+ *                       *custom*      *
+ * ----------------------------------- */
+trxFlag = 0
+if trxFlag = 1 then do
+   Address TSO "TRX CHECK"
+   if RC = 0 then TRX = 'Active'
+   else           TRX = 'InActive'
+  end
+else trx = 'InActive'
+if TRX = 'Active' then Do
+   call do_TRX 'add'
+   Address ISPExec
+  end
+else do
+   if length(step) > 0 then call do_steplib
+
+   if length(clist) > 0 then
+      "ALTLIB ACTIVATE APPLICATION(clist) DATASET("clist")"
+   if length(exec) > 0 then
+      "ALTLIB ACTIVATE APPLICATION(exec)  DATASET("exec")"
+
+   Address ISPExec
+
+   if length(llib) > 0 then
+      "Libdef ISPLLIB Dataset id("llib") Stack"
+   if length(msgs) > 0 then
+      "Libdef ISPMLIB Dataset id("msgs") Stack"
+   if length(panels) > 0 then
+      "Libdef ISPPLIB Dataset id("panels") Stack"
+   if length(skels) > 0 then
+      "Libdef ISPSLIB Dataset id("skels") Stack"
+   if length(table) > 0 then
+      "Libdef ISPTLIB Dataset id("table") Stack"
+end
+
+/* ----------------------------------------------------- *
+ * Invoke the specified application                      *
+ * ----------------------------------------------------- */
+ "VGET ZPFSHOW PROFILE"; SZPFSHOW = ZPFSHOW /* Get & Save  PFK Show  */
+ parse value "" with zerrsm zerrlm
+ "SELECT" sel
+ return_rc = rc
+ "SELECT PGM(ISPOPF) PARM(PFK,"SZPFSHOW")"    /* Restore PFK Show    */
+ if return_rc > 0 THEN DO
+    if length(zerrsm) > 0 then
+       say "PLP Error:" zerrsm
+    if length(zerrlm) > 0 then
+       say "PLP Error:" zerrlm
+    end
+
+/* ----------------------------------------------------- *
+ * Back from the application - now clean up              *
+ * ----------------------------------------------------- */
+if TRX = 'Active' then call do_TRX 'drop'
+else do
+   if length(step)   > 0 then call free_steplib
+   if length(llib)   > 0 then "Libdef ISPLLIB"
+   if length(msgs)   > 0 then "Libdef ISPMLIB"
+   if length(panels) > 0 then "Libdef ISPPLIB"
+   if length(skels)  > 0 then "Libdef ISPSLIB"
+   if length(table)  > 0 then "Libdef ISPTLIB"
+   if length(clist)  > 0 then
+      Address TSO "ALTLIB DEACTIVATE APPLICATION(clist)"
+   if length(exec)   > 0 then
+      Address TSO "ALTLIB DEACTIVATE APPLICATION(exec)"
+end
+return
+
+/* ----------------------------------------------------- *
+ * Setup the steplib environment                         *
+ * ----------------------------------------------------- */
+Do_Steplib:
+if left(steplib,1) = "T" then
+     "DS Add("step") Front Push Nomsg"
+if left(steplib,1) = "D" then
+     "STEPLIB  Add Da("step") First Nomsgs"
+if left(steplib,1) = "G" then do
+     stepdd = "step"random(999)
+     "Alloc f("stepdd") shr reuse ds("step")"
+     "Steplib Set("stepdd")"
+     end
+Return
+
+/* ----------------------------------------------------- *
+ * Free up the steplib environment                       *
+ * ----------------------------------------------------- */
+Free_Steplib:
+if left(steplib,1) = "T" then
+   Address TSO "DS Nomsg"
+if left(steplib,1) = "D" then
+   Address TSO "Steplib Free Nomsgs"
+if left(steplib,1) = "G" then
+     "Steplib Close"
+Return
+
+/* ----------------------------------------------------- *
+ * TRX handler -- trxopt is either ADD or DROP           *
+ * ----------------------------------------------------- */
+do_TRX:
+Arg trxopt
+If length(step)   > 0 then Call TRX_file 'STEPLIB' step
+If length(clist)  > 0 then Call TRX_file 'SYSPROC' clist
+If length(exec)   > 0 then Call TRX_file 'SYSEXEC' exec
+If length(llib)   > 0 then Call TRX_file 'ISPLLIB' llib
+If length(msgs)   > 0 then Call TRX_file 'ISPMLIB' msgs
+If length(panels) > 0 then Do
+   Call TRX_file 'ISPPLIB' panels
+   Address TSO "TRX PURGE"
+End
+If length(skels)  > 0 then Call TRX_file 'ISPSLIB' skels
+If length(table)  > 0 then Call TRX_file 'ISPTLIB' table
+Return
+
+/* ----------------------------------------------------- *
+ * TRX file add/drop -- parse the dataset list and add   *
+ *                      datasets in reverse order because*
+ *                      each call stacks on top of prev. *
+ * ----------------------------------------------------- */
+TRX_file:
+Arg DD filelist
+filelist = Translate(filelist," '",',"')
+dsn. = ''
+d = -1
+Do until filelist = ''
+   d = d + 1
+   Parse var filelist dsn.d filelist
+End
+Do a = d to 0 by -1
+   Address TSO "TRX" trxopt "FI("DD") DS("dsn.a")"
+End
+Return

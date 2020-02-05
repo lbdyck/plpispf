@@ -1,0 +1,7 @@
+        /* rexx ISPF Edit Macro */
+        Address ISREdit
+        "Macro"
+        "Caps Off"
+        "Stats On"
+        "Number Off"
+        "Reset"

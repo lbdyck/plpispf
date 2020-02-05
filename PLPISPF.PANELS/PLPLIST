@@ -1,0 +1,39 @@
+)Attr Default(%+_)
+   ! type( input) intens(high) caps(on ) just(left ) hilite(uscore)
+   $ type(output) intens(low ) caps(off) just(asis )
+   @ type(output) intens(low ) caps(off) just(asis )
+     hilite(reverse)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\)
+@z   % -\-\-~Product Launch Point Menu@tbl @ver %-\-\-
+%Command ===>_zcmd                                 \ \%Scroll ===>_amt +
+%
++ Commands:`Find+xxx`Locate+xxx`Only+xxx`Start+app opt`Reset+
++ Line:    `S+Select`B+Browse Doc`I+Info`L+Launch`P+Prompted Execute`U+User
++
+%Sel+ %Application Description                         +(press PF1 for help)
++
+)Model
+!z+   $z          $z
+)Init
+ .help = plph0
+ .zvars = '(zsysid zsel app desc)'
+ .ATTR(APP)='PAS(ON)'
+ &amt = csr
+)Proc
+ &row = &z
+ if (&ZCMD = &Z)
+     if (&ztdsels = 0000)
+        &row = .csrrow
+        if (&row ^= &z)
+            if (&zsel = &z)
+                &zsel = S
+     if (&ztdsels ^= 0000)
+         &row = &z
+     if (&ZSEL ^= &Z)
+       if (&Zsel = '=')
+           &Zsel = &osel
+     &osel = &zsel
+ ver (&zsel,list,S,B,L,U,I,P,&Z)
+)End

@@ -1,0 +1,26 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(%+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   % type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Launch Help%-\-\-
+%Command ===>_zcmd
+%
+                %Product Launch Point Execution Prompting
++
++This panel prompts for additional parameters for the selected
++command. Once those parameters are entered they will be combined with
++the command for execution.
++
++To execute the command enter RUN on the ISPF command line.
++
++To cancel the execution press PF3.
++
+)Init
+  .cursor = zcmd
+)Proc
+)end

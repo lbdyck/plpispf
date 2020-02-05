@@ -1,0 +1,51 @@
+)ATTR
+  _ TYPE(INPUT) CAPS(OFF) INTENS(HIGH) FORMAT(&MIXED)
+  | AREA(DYNAMIC) EXTEND(ON) SCROLL(ON)
+  + TYPE(TEXT) INTENS(LOW)
+  ! TYPE(OUTPUT) INTENS(HIGH) PAD(-)
+ 01 TYPE(DATAOUT) INTENS(LOW)
+ 02 TYPE(DATAOUT) INTENS(HIGH)
+ 0B TYPE(DATAOUT) INTENS(HIGH) FORMAT(DBCS)
+ 0C TYPE(DATAOUT) INTENS(HIGH) FORMAT(EBCDIC)
+ 0D TYPE(DATAOUT) INTENS(HIGH) FORMAT(&MIXED)
+ 10 TYPE(DATAOUT) INTENS(LOW)  FORMAT(DBCS)
+ 11 TYPE(DATAOUT) INTENS(LOW)  FORMAT(EBCDIC)
+ 12 TYPE(DATAOUT) INTENS(LOW)  FORMAT(&MIXED)
+)BODY WIDTH(&ZWIDTH) EXPAND(//)
+%BROWSE - &ZTITLE -----------------------------/-/---%LINE!ZLINES  %COL!ZCOLUMS+
+%COMMAND ===>_ZCMD                             / /            %SCROLL ===>_Z   +
+|ZDATA ---------------------------------/ /------------------------------------|
+|                                       / /                                    |
+| --------------------------------------/-/------------------------------------|
+)INIT
+  .HELP = ISR10000         /* DEFAULT TUTORIAL NAME     */
+  .ZVARS = 'ZSCBR'         /* SCROLL AMT VARIABLE NAME  */
+  &ZTITLE = 'Browse information for &app'
+  &MIXED = MIX
+  IF (&ZPDMIX = N)         /* EBCDIC MODE REQUESTED     */
+    &MIXED = EBCDIC
+  VGET (ZSCBR) PROFILE     /* FILL SCROLL VARS IF       */
+  IF (&ZSCBR = ' ')        /* BLANK WITH PAGE.          */
+   &ZSCBR = 'CSR'          /*                           */
+
+)REINIT
+  REFRESH(ZCMD,ZSCBR,ZDATA,ZLINES,ZCOLUMS)
+ /*  .ATTRCHAR(+) = 'INTENS(&ZINTEN)' */
+
+)PROC
+  &ZCURSOR = .CURSOR
+  &ZCSROFF = .CSRPOS
+  &ZLVLINE = LVLINE(ZDATA)
+  VPUT (ZSCBR) PROFILE
+
+)END
+
+/********************************************************************/
+/* Use variable ZDSVOL to display the volume of the data set        */
+/********************************************************************/
+/*  DYNAMIC AREA SCREEN WIDTH FROM PQUERY. (80,132,160)
+/*  DYNAMIC AREA SCREEN DEPTH FROM PQUERY. (24,32,43,27,60)
+/* $G1= PTR1073  OS390R3  960517  020136:  REMOVE UNNEEDED ATTRIBUTE */
+/*  OVERRIDE                                                         */
+/* $BE= USERREQ   OS390R3   961010   040100 :  add zdsvol            */
+ /* 5645-001, 5655-042 (C) COPYRIGHT IBM CORP 1980, 1996 */

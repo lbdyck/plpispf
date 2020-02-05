@@ -1,0 +1,37 @@
+/* --------------------  rexx procedure  -------------------- *
+ * Name:      plpentry                                        *
+ *                                                            *
+ * Function:  dynamically allocate the plp libraries          *
+ *            for testing purposes                            *
+ *                                                            *
+ * Syntax:    %plpentry plp-option                            *
+ *                                                            *
+ * Author:    Lionel B. Dyck                                  *
+ *                                                            *
+ * History:                                                   *
+ *            10/05/18 - Creation                             *
+ *                                                            *
+ * ---------------------------------------------------------- *
+ * Copyright (c) 2018 by Lionel B. Dyck                       *
+ * ---------------------------------------------------------- */
+  arg opt
+
+/* ------------------- *
+ | Change before using |
+ * ------------------- */
+  exec   = "'t311lbd.plp.exec'"
+  panels = "'t311lbd.plp.panels'"
+
+/* --------------- *
+ | Now do the work |
+ * --------------- */
+  'altlib activate dataset('exec') application(exec)'
+  address ispexec
+  'libdef ispplib dataset id('panels') stack'
+  'Select cmd(%plpispf' opt ') scrname(plp)'
+/* ------------ *
+ | Done so exit |
+ * ------------ */
+  'libdef ispplib'
+  address tso
+  'altlib deactivate application(exec)'

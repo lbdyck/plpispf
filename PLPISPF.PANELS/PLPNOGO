@@ -1,0 +1,21 @@
+)ATTR DEFAULT(%+_)
+   %   TYPE(TEXT)   INTENS(HIGH)
+   +   TYPE(TEXT)   INTENS(LOW)  SKIP(ON) PAD(NULLS) COLOR(GREEN)
+   }   TYPE(TEXT)   INTENS(HIGH) COLOR(YELLOW)
+   ~   TYPE(OUTPUT) INTENS(LOW)  COLOR(YELLOW)
+   _   TYPE(INPUT)  INTENS(HIGH) CAPS(ON) JUST(LEFT) PADC('_')
+)BODY WINDOW(50,9)
+%CMD=>_ZCMD
++
++   %&MSG1
++
++    This product is not operational
++    on this SYSPLEX or LPAR
++
++             Press%"ENTER+to return
++
+)INIT
+   &ZWINTTL = 'Incorrect - Sysplex/Lpar'
+    .CURSOR = ZCMD
+)PROC
+)END

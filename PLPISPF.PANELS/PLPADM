@@ -1,0 +1,40 @@
+)Attr Default(%+_)
+   ! type( input) intens(high) caps(on ) just(left ) hilite(uscore)
+   $ type(output) intens(low ) caps(off) just(asis )
+   @ type(output) intens(low ) caps(off) just(asis )
+     hilite(reverse)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\)
+@z   %-\-\- ~Product Launch Point Management@tbl  %-\-\-
+%Command ===>_zcmd                                 \ \%Scroll ===>_amt +
+%
++ Commands:`F+xxx`Insert`L+xxx`Only+xxx`Reset+and`Start+app opt
+          +`Save`Cancel`Copy`Menu+or`Report+
++ Line:    `A B C D E I L M P R S+ (see help for more information)
++
+%Sel+ %Application Description                         +(press PF1 for help)
++
+)Model
+!z+   $z          $z
+)Init
+ .help = plpmh0
+ .zvars = '(zsysid zsel app desc)'
+ &amt = csr
+ .ATTR(APP)='PAS(ON)'
+)Proc
+ &row = &z
+ if (&ZCMD = &Z)
+     if (&ztdsels = 0000)
+        &row = .csrrow
+        if (&row ^= &z)
+            if (&zsel = &z)
+                &zsel = S
+     if (&ztdsels ^= 0000)
+         &row = &z
+     if (&ZSEL ^= &Z)
+       if (&Zsel = '=')
+           &Zsel = &osel
+     &osel = &zsel
+ ver (&zsel,list,A,B,C,D,E,I,L,M,P,R,S,&z)
+)End

@@ -1,0 +1,43 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(@+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   @ type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+@-\-\- ~Product Launch Point Application Help@-\-\-
+@Command ===>_zcmd
+@
++                                                                @Up F10 Dn F11
+#help -------------------------------------------------------------------------#
+)Area Help
++  When you want to define additional application specific datasets to
++  the PLP application this panel is where you do it.
++
+` DDx+
++
++    Enter a DDname that the application requires. If the DDname field
++    is blank then the dataset will be concatenated to the prior defined
++    DDname.
++
+` DSNx+
++
++    Enter the dataset name, using standard ISPF dataset naming standards,
+     that is to be allocated to the specified DDname.
++
++    Alternately enter SYSOUT(x) for a SYSOUT allocation, where x is a valid
++    SYSOUT class.
++
++   Examples:
++
+   +DD1 :  SOMEDD1  DSN1 :  SYSOUT(0)
+   +DD2 :  SOMEDD2  DSN2 :  SYSOUT(),HOLD
+   +DD3 :  SOMEDD3  DSN3 :  SYSOUT(x),NOHOLD
+   +DD4 :  SOMEDD3  DSN4 :  SYSOUT(x),WRITER(LOCAL),FORM(1423),COPIES(2)
++
+)Init
+  .cursor = zcmd
+)Proc
+)end

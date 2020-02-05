@@ -1,0 +1,21 @@
+)Attr Default(%+_)
+   ! type( output) intens(high) caps(on ) just(left ) hilite(uscore)
+   # type( output) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(high) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Management%-\-\-
+%Command ===>_zcmd
+%
++*Application Name         !app     +A unique application name 1-8 characters
++*Description              #desc                                             +
++
++*Application Start
++    Command    $cmd                                            +
++    Options:   #cmdopt                                         +Changeable
++
+)Init
+  .help = plpmh2
+)Proc
+)End

@@ -1,0 +1,48 @@
+)Attr Default(%+_)
+   ! type( input) intens(high) caps(on ) just(left ) hilite(uscore)
+   # type( input) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(low ) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\) Width(&ZSCRMAXW) CMD(ZCMD)
+%-\-\- ~Product Launch Point Management%-\-\-
+%Command ===>_zcmd
+%
++ Enter, Verify, or Change
++
+  +DD1 : !dd1     +DSN1 : !DSN1  \ \ +  +
+  +DD2 : !dd2     +DSN2 : !DSN2  \ \ +  +
+  +DD3 : !dd3     +DSN3 : !DSN3  \ \ +  +
+  +DD4 : !dd4     +DSN4 : !DSN4  \ \ +  +
+  +DD5 : !dd5     +DSN5 : !DSN5  \ \ +  +
+  +DD6 : !dd6     +DSN6 : !DSN6  \ \ +  +
+  +DD7 : !dd7     +DSN7 : !DSN7  \ \ +  +
+  +DD8 : !dd8     +DSN8 : !DSN8  \ \ +  +
+  +DD9 : !dd9     +DSN9 : !DSN9  \ \ +  +
+  +DD10: !dd10    +DSN10: !DSN10 \ \ +  +
+  +DD11: !dd11    +DSN11: !DSN11 \ \ +  +
+  +DD12: !dd12    +DSN12: !DSN12 \ \ +  +
+  +DD13: !dd13    +DSN13: !DSN13 \ \ +  +
+  +DD14: !dd14    +DSN14: !DSN14 \ \ +  +
+  +DD15: !dd15    +DSN15: !DSN15 \ \ +  +
++
+\ \If DD is blank then the DSN is concatenated to the prior non-blank DD.\ \
+)Init
+ .help = plpmhd
+)Proc
+ ver (&dd1,name)
+ ver (&dd2,name)
+ ver (&dd3,name)
+ ver (&dd4,name)
+ ver (&dd5,name)
+ ver (&dd6,name)
+ ver (&dd7,name)
+ ver (&dd8,name)
+ ver (&dd9,name)
+ ver (&dd10,name)
+ ver (&dd11,name)
+ ver (&dd12,name)
+ ver (&dd13,name)
+ ver (&dd14,name)
+ ver (&dd15,name)
+)End

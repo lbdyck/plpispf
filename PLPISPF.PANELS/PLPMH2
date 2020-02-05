@@ -1,0 +1,51 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(@+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   @ type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+@-\-\- ~Product Launch Point Application Help@-\-\-
+@Command ===>_zcmd
+@
++                                                                @Up F10 Dn F11
+#help -------------------------------------------------------------------------#
+)Area Help
++  This panel is used when you Add or Update a previously defined Application
++  to the User Product Launch Point table.
++
++  You may change the~Application Name+to something shorter and/or easier
++  for you to remember. e.g. SDSF could be changed to ST for SDSF Status
++  assuming you also change the~Options+to include ST.
++
++  The~Options+section should only be modified if you know a valid option
++  to pass to the application.
++
++  Fields with an * are Required...
++
+`*Application Name+
++
++    Enter the application name that will be used in the table.  It is
++    a 1 to 8 character descriptive name.
++
+`*Description+
++
++    Enter a line of descriptive text to convey to the user what this
++    application is used for.
++
+`*Application Start+
+`    Command+    may not be changed+
+`    Options:+   may be changed to add a valid option to the command+
++    Mode:+      F for Fullscreen or L for Line mode
++
+` Additional Datasets:                                                         +
++
++    Specify Yes to be prompted to enter up to 12 additional datasets or
++    No to bypass the prompt.
++
+)Init
+  .cursor = zcmd
+)Proc
+)end

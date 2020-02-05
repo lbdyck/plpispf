@@ -1,0 +1,55 @@
+)Attr Default(%+_)
+   ! type( input) intens(high) caps(on ) just(left ) hilite(uscore)
+   # type( input) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(low ) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\) Width(&ZSCRMAXW) CMD(ZCMD)
+%-\-\- ~Product Launch Point Management%-\-\-
+%Command ===>_zcmd
+%
++ Enter, Verify, or Change (* = required)
++
++*Application Name     !app     +A unique application name 1-8 characters
++ Application ID       !z   +    1-4 characters for application id
++*Description          #desc   \ \ +
++ Step Library         !step   \ \ +
++ ISPF Load Library    !llib   \ \ +
++ ISPF Message Dataset !msg    \ \ +
++ ISPF Panel Dataset   !panel  \ \ +
++ ISPF Skeleton Dataset!skel   \ \ +
++ ISPF Table Dataset   !table  \ \ +
++ Clist Library        !clist  \ \ +
++ REXX EXEC Library    !rexx   \ \ +
++*Application Start (select one)
++    Command   #cmd                         \ \ +MODE!Z+
++    Program   !pgm     +Parm#parm          \ \ +
++    ISPF Panel!ipanel  +Panel option#iopt  \ \ +MODE!Z+
++ Additional Datasets: #add+ Yes to add more +
++
+)Init
+ .zvars = '(applid,cmdmode,pgmmode)'
+ if (&tbl NE USER)
+    .help = plpmh1
+ if (&tbl = USER)
+    .help = plpmh2
+ &add = trans(trunc(&add,1) y,Yes Y,Yes n,No N,No &z,No)
+)Proc
+ ver (&app,nb)
+ if (&applid NE &z)
+    ver (&applid,nb,name)
+ ver (&desc,nb)
+ if (&pgm = &z)
+    if (&ipanel = &z)
+       ver (&cmd,nb)
+ if (&cmd = &z)
+    if (&ipanel = &z)
+       ver (&pgm,nb)
+ if (&cmd = &z)
+    if (&pgm = &z)
+       ver (&ipanel,nb)
+ &add = trans(trunc(&add,1) y,Yes Y,Yes n,No N,No &z,No *,*)
+ ver (&add,nb,list,Yes,No)
+ ver (&cmdmode,list,F,L,&z)
+ ver (&pgmmode,list,F,L,&z)
+)End

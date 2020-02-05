@@ -1,0 +1,40 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(%+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   % type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Launch Help%-\-\-
+%Command ===>_zcmd
+%
++                                                                %Up F10 Dn F11
+#help -------------------------------------------------------------------------#
+)Area Help
++  You have selected to use the Launch option to start the selected
++  application in a new ISPF Session.  This tutorial will provide you with
++  some information that you may require to be able to successfully switch
++  between the multiple ISPF Sessions.
++
++  You will only see this tutorial once - this information is also in the
++  main tutorial.+
++
++  ISPF supports up to 32 different Split Sessions.  To switch between 2
++  sessions is easy using the default PF9/PF21 key which is defined as SWAP.
++  To switch between more than 2 sessions requires the use of either the
++  SWAP LIST or the SWAP NEXT command.
++
++  To change your default SWAP key from SWAP to SWAP LIST or SWAP NEXT:
++
++  1. On the ISPF Command line enter KEYS
++  2. Change the command for PF9 to SWAP LIST or SWAP NEXT
++  3. Scroll down to PF21 and change it as well
++
++  Note: You may have to do this several times as each ISPF application
++  may have a different ISPF Profile which will have to be updated.
+)Init
+  .cursor = zcmd
+)Proc
+)end

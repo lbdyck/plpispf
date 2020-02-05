@@ -1,0 +1,30 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(@+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   @ type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+@-\-\- ~Product Launch Point Application Help@-\-\-
+@Command ===>_zcmd
+@
++                                                                @Up F10 Dn F11
+#help -------------------------------------------------------------------------#
+)Area Help
++  This panel is used to define a new sub-menu.
++
++
+`*Menu Name+
++
++    Enter a 1 to 8 character Menu Name.
++
+`*Description+
++
++    Enter a line of descriptive text to convey to the user what this
++    menu is used for.
+)Init
+  .cursor = zcmd
+)Proc
+)end

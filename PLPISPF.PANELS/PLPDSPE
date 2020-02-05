@@ -1,0 +1,34 @@
+)Attr Default(%+_)
+   ! type( output) intens(high) caps(on ) just(left ) hilite(uscore)
+   # type( output) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(low ) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\) Width(&ZSCRMAXW) CMD(ZCMD)
+%-\-\- ~Product Launch Point Management%-\-\-
+%Command ===>_zcmd
+%
++*Application Name     !app     +A unique application name 1-8 characters
++ Application ID       !z   +    1-4 characters for application id
++*Description          #desc   \ \ +
++ Step Library         !step   \ \ +
++ ISPF Load Library    !llib   \ \ +
++ ISPF Message Dataset !msg    \ \ +
++ ISPF Panel Dataset   !panel  \ \ +
++ ISPF Skeleton Dataset!skel   \ \ +
++ ISPF Table Dataset   !table  \ \ +
++ Clist Library        !clist  \ \ +
++ REXX EXEC Library    !rexx   \ \ +
++*Application Start (select one):
++    Command   #cmd                        \ \ +MODE!Z+
++    Program   !pgm     +Parm #parm        \ \ +
++    ISPF Panel!ipanel  +Panel option#iopt \ \ +MODE!Z+
++
+)Init
+ .zvars = '(applid,cmdmode,pgmmode)'
+ if (&tbl NE USER)
+    .help = plpmh1
+ if (&tbl = USER)
+    .help = plpmh2
+)Proc
+)End

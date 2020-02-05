@@ -1,0 +1,70 @@
+)Panel Keylist(ISPHelp,ISP)
+)Attr Default(%+_)
+/* _ type( input) intens(high) caps(on ) just(left )               */
+   ! type(output) intens(high) caps(off) just(asis ) color(white)
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+   % type(text) intens(high)
+   # area(SCRL) Extend(ON)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Management Help%-\-\-
+%Command ===>_zcmd
+%
++                                                                %Up F10 Dn F11
+#help -------------------------------------------------------------------------#
+)Area Help
++  Welcome to the ISPF Dialog that provides the management interface to the
++  application products available under ISPF.
++
++ `Command options:+
++
++ `F xxx+     Find the specified character string in any position of the
++             application name or description.  The cursor is positioned
++             on that row for easy starting by just pressing the Enter key.
++
++ `I+         Insert a new application.
++
++ `L xx+      Locate the specified character prefix in the first positions
++             of the application name.  The cursor is positioned on the
++             first match on that row for easy starting by just pressing
++             the Enter key.
++
++ `S app opt+ Starts the application specified and passed the specified
++             options to the command.
++             e.g. S SDSF ST
++
++ `Save+      Save the Application table.
++
++ `Cancel+    Cancel updates to the Application table.
++
++ `Report+    Generate a report of the table.
++
++ Line:    `C+Change`D+Delete`I+Insert`S+Start+`L+Launch+`B+/`E+Browse/Edit Info
++ `Line options:+
++
++ `A+         Create and Alias for a command.  The alias will always execute
++             the original command.
++
++ `B+         Browse brief information on the current application.
++             (not available for all applications)
++
++ `C+         Change the current application
++
++ `E+         Edit the brief information on the current application.
++
++ `I+         Insert a new application
++
++ `L+         Launch the current application.  This is different from Select
++             because the application is started in a new ISPF Session.  To
++             switch from it you should change your SWAP ISPF Key from SWAP
++             to SWAP LIST.
++
++ `R+         Repeat the current application with a different name.
++             Allows cloning of one application to another (perhaps
++             a new release).
++
++ `S+         Select the current application to start.
+)Init
+  .cursor = zcmd
+)Proc
+)end

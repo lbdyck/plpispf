@@ -1,0 +1,22 @@
+)Attr Default(%+_)
+   ! type( output) intens(high) caps(on ) just(left ) hilite(uscore)
+   # type( output) intens(high) caps(off) just(left ) hilite(uscore)
+   $ type(output) intens(low ) caps(off) just(asis )
+   ~ type(text) intens(high) color(blue) hilite(reverse)
+   ` type(text) intens(high) color(red)
+)Body  Expand(\\)
+%-\-\- ~Product Launch Point Management%-\-\-
+%Command ===>_zcmd
+%
++*Menu Name                !app     +Menu Name
++ Application ID           !z   +    Menu table
++*Description              #desc                                             +
++
+)Init
+  .zvars = '(applid)'
+ if (&tbl NE USER)
+    .help = plpmh1
+ if (&tbl = USER)
+    .help = plpmh2
+)Proc
+)End
