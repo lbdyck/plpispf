@@ -11,7 +11,7 @@ lbdyck@gmail.com
 1. What is PLP?
 
 PLP is short for Product Launch Point.  It is an enhanced, flexible,
-dynamic ISPF menuing environment that has been implemented at Kaiser.
+dynamic ISPF menuing environment.
 
 2. I notice from the documentation that I can use PLP from any ISPF
    panel.  Why is this?
@@ -100,11 +100,10 @@ enter S app options on the PLP command line.
 
 6. You mentioned L for Launch.  What is that option?
 
-Launching an application will start another ISPF screen.  ISPF, in the Kaiser
-implementation, supports up to 8 split screens.  Thus using Launch you can
-open a new screen within ISPF for the application.  Note that if you do this
-that you will have to (1) remember the screen name or (2) change your swap
-key from SWAP to SWAP LIST or SWAP NEXT.
+Launching an application will start another ISPF screen.  Thus using Launch
+you can open a new screen within ISPF for the application.  Note that if you
+do this that you will have to (1) remember the screen name or (2) change your
+swap key from SWAP to SWAP LIST or SWAP NEXT.
 
 SWAP LIST will bring up a list of open screens that you can then select and
 switch to as shown below:
